@@ -20,7 +20,7 @@ class JWTProvider(AuthProvider):
 
     async def create(self, exp: int, data: dict[str, Any]) -> str:
         """Создание JWT токена."""
-        payload = await self.jam_instance.make_payload(exp, data=data)
+        payload = await self.jam_instance.make_payload(exp, **data)
         return await self.jam_instance.gen_jwt_token(payload)
 
     async def verify(self, token: str) -> dict:
