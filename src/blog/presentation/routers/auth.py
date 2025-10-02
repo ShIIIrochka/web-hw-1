@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from litestar import Controller, Request, post, Response
-from litestar.datastructures import State, Cookie
+from litestar import Controller, Response, post
+from litestar.datastructures import Cookie
 from punq import Container
 
 from blog.application.dto.tokens import JWTTokens
