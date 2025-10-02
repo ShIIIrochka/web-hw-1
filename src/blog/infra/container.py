@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*2-
-
+from jam.aio import Jam
 from punq import Container
 
 from blog.application.services.auth_service import AuthService
@@ -13,19 +13,30 @@ from blog.infra.repositories.database_repository import MongoRepository
 
 
 def container_builder() -> Container:
-
     container = Container()
 
     container.register(Config, instance=Config.get_config())
 
-    container.register(AuthProvider, instance=JWTProvider)
+    container.register(
+        Jam,
+        instance=Jam(
+            config={
+                "auth_type": "jwt",
+                "secret_key": (container.resolve(Config)).secret_key,
+            }
+        ),
+    )
+
+    container.register(
+        AuthProvider, instance=JWTProvider(jam_instance=container.resolve(Jam))
+    )
 
     container.register(
         DBGateway,
         instance=MongoGateway(
             uri=container.resolve(Config).db_uri,
             db_name=container.resolve(Config).db_name,
-        )
+        ),
     )
 
     container.register(
@@ -34,7 +45,7 @@ def container_builder() -> Container:
             auth_provider=container.resolve(AuthProvider),
             access_exp=container.resolve(Config).access_exp,
             refresh_exp=container.resolve(Config).refresh_exp,
-        )
+        ),
     )
 
     container.register(
@@ -49,6 +60,6 @@ def container_builder() -> Container:
         UserService,
         factory=lambda: UserService(
             repository=container.resolve("UserRepo"),
-        )
+        ),
     )
     return container
