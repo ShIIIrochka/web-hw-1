@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from blog.domain.entities import User
+from blog.domain.entities.user import User
 
 
 @dataclass

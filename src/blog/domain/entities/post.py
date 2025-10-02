@@ -12,5 +12,5 @@ class Post(BaseModel):
 
     title: str
     content: str
-    createdAt: datetime # Дата и время создания
-    updatedAt: datetime # Дата и время последнего редактирования
+    createdAt: datetime  # Дата и время создания
+    updatedAt: datetime  # Дата и время последнего редактирования

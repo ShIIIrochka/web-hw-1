@@ -6,6 +6,7 @@ from jam.aio import Jam
 
 from blog.infra.providers.interfaces import AuthProvider
 
+
 class JWTProvider(AuthProvider):
     """Провайдер аутентификации с использованием JWT."""
 

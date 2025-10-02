@@ -2,8 +2,11 @@
 
 from jam.exceptions import TokenLifeTimeExpired
 
-from blog.application.exceptions.auth import AccessTokenExpiredError, InvalidToken
-from blog.domain.entities import User
+from blog.application.exceptions.auth import (
+    AccessTokenExpiredError,
+    InvalidToken,
+)
+from blog.domain.entities.user import User
 from blog.domain.value_objects.auth_payload import JWTPayload
 from blog.domain.value_objects.tokens import JWT
 from blog.infra.providers.interfaces import AuthProvider
@@ -12,7 +15,9 @@ from blog.infra.providers.interfaces import AuthProvider
 class AuthService:
     """Сервис для авторизации пользователей."""
 
-    def __init__(self, auth_provider: AuthProvider, access_exp: int, refresh_exp: int) -> None:
+    def __init__(
+        self, auth_provider: AuthProvider, access_exp: int, refresh_exp: int
+    ) -> None:
         """Конструктор.
 
         Args:
@@ -35,11 +40,11 @@ class AuthService:
         """
         access_token = await self.auth_provider.create(
             data=JWTPayload.make_payload(user, "access").__dict__,
-            exp=self.access_exp
+            exp=self.access_exp,
         )
         refresh_token = await self.auth_provider.create(
             data=JWTPayload.make_payload(user, "refresh").__dict__,
-            exp=self.refresh_exp
+            exp=self.refresh_exp,
         )
 
         return JWT(refresh=refresh_token, access=access_token)
