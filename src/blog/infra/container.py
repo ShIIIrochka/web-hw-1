@@ -3,6 +3,7 @@ from jam.aio import Jam
 from punq import Container
 
 from blog.application.services.auth_service import AuthService
+from blog.application.services.post_service import PostService
 from blog.application.services.user_service import UserService
 from blog.infra.config import Config
 from blog.infra.gateways.database import MongoGateway
@@ -60,6 +61,21 @@ def container_builder() -> Container:
         UserService,
         factory=lambda: UserService(
             repository=container.resolve("UserRepo"),
+        ),
+    )
+
+    container.register(
+        "PostRepo",
+        factory=lambda: MongoRepository(
+            gateway=container.resolve(DBGateway),
+            collection_name="posts",
+        ),
+    )
+
+    container.register(
+        PostService,
+        factory=lambda: PostService(
+            repository=container.resolve("PostRepo"),
         ),
     )
     return container
