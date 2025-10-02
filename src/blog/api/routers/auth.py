@@ -9,8 +9,8 @@ from blog.domain.services.user_service import UserService
 from blog.domain.entities.user import User
 from blog.domain.value_objects.tokens import JWT
 from blog.infra.config import Config
-from blog.application.dto.tokens import JWTTokens
-from blog.application.dto.users import CreateUserDTO
+from blog.api.dto.tokens import JWTTokens
+from blog.api.dto.users import CreateUserDTO
 
 
 class AuthController(Controller):

@@ -7,7 +7,7 @@ from litestar.openapi.spec import Components, SecurityScheme
 
 from blog.infra.container import container_builder
 from blog.middlewares.auth_middleware import middlewares
-from blog.application.routers import routers
+from blog.api.routers import routers
 
 openapi_config = OpenAPIConfig(
     title="Blog API",

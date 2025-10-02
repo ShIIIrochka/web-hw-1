@@ -8,7 +8,7 @@ from punq import Container
 
 from blog.domain.services.user_service import UserService
 from blog.domain.entities.user import User
-from blog.application.dto.users import UpdateUserDTO, UserDTO
+from blog.api.dto.users import UpdateUserDTO, UserDTO
 
 
 class UserController(Controller):
