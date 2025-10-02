@@ -2,7 +2,7 @@
 
 from litestar import Controller, Request, get, post, put
 from litestar.datastructures import State
-from litestar.exceptions import NotAuthorizedException
+from litestar.exceptions import NotAuthorizedException, ValidationException
 from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from punq import Container
 
@@ -49,7 +49,10 @@ class UserController(Controller):
             raise NotAuthorizedException
 
         user_service = container.resolve(UserService)
-        user = await user_service.update_user(user, data.__dict__)
+        try:
+            user = await user_service.update_user(user, data.__dict__)
+        except ValueError:
+            raise ValidationException
         return user
 
     @post(

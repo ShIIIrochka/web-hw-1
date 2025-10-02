@@ -5,7 +5,7 @@ from litestar.datastructures import State
 from litestar.dto import DataclassDTO
 from litestar.exceptions import (
     NotAuthorizedException,
-    PermissionDeniedException,
+    PermissionDeniedException, NotFoundException,
 )
 from litestar.status_codes import HTTP_204_NO_CONTENT
 from punq import Container
@@ -28,7 +28,10 @@ class PostController(Controller):
     ) -> Post:
         """Получение поста по ID."""
         post_service: PostService = container.resolve(PostService)
-        return await post_service.get_post_by_id(post_id)
+        try:
+            return await post_service.get_post_by_id(post_id)
+        except ValueError:
+            raise NotFoundException
 
     @post(
         "/create",
@@ -65,7 +68,10 @@ class PostController(Controller):
     ) -> Post:
         """Обновление поста."""
         post_service: PostService = container.resolve(PostService)
-        post = await post_service.get_post_by_id(post_id)
+        try:
+            post = await post_service.get_post_by_id(post_id)
+        except ValueError:
+            raise NotFoundException
         try:
             return await post_service.update_post(
                 request.user, post, data.__dict__
@@ -86,7 +92,10 @@ class PostController(Controller):
     ) -> None:
         """Удаление поста."""
         post_service: PostService = container.resolve(PostService)
-        post = await post_service.get_post_by_id(post_id)
+        try:
+            post = await post_service.get_post_by_id(post_id)
+        except ValueError:
+            raise NotFoundException
         try:
             await post_service.delete_post(request.user, post)
         except PermissionError:

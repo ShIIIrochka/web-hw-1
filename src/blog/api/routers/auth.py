@@ -2,7 +2,7 @@
 
 from litestar import Controller, Request, Response, post
 from litestar.datastructures import Cookie, State
-from litestar.exceptions import ValidationException
+from litestar.exceptions import ValidationException, NotAuthorizedException
 from punq import Container
 
 from blog.domain.services.auth_service import AuthService
@@ -64,6 +64,8 @@ class AuthController(Controller):
     ) -> Response[JWT]:
         """Обновление токенов."""
         auth_service: AuthService = container.resolve(AuthService)
+        if not request.cookies.get("token"):
+            raise NotAuthorizedException
         tokens = await auth_service.refresh_tokens(request.cookies.get("token"))
         return Response(
             tokens,

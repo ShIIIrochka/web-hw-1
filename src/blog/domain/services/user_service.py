@@ -70,6 +70,11 @@ class UserService:
         """
         from bson import ObjectId
 
+        try:
+            validate_email(data["email"])
+        except Exception:
+            raise ValueError
+
         data.pop("_id", None)
 
         await self._repo.update({"_id": ObjectId(user.id)}, {"$set": data})

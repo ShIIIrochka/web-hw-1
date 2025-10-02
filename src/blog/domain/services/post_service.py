@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from bson import ObjectId
+from bson.errors import InvalidId
 
 from blog.domain.entities.post import Post
 from blog.domain.entities.user import User
@@ -31,7 +32,10 @@ class PostService:
             ValueError: Если пост не найден.
         """
 
-        post = await self._repo.get_one({"_id": ObjectId(post_id)})
+        try:
+            post = await self._repo.get_one({"_id": ObjectId(post_id)})
+        except InvalidId:
+            raise ValueError("Post not found")
         if post:
             return Post.from_raw(post)
         else:
