@@ -3,6 +3,9 @@
 from litestar import Router
 
 from blog.presentation.routers.auth import AuthController
+from blog.presentation.routers.posts import PostController
 from blog.presentation.routers.users import UserController
 
-routers = Router(path="/", route_handlers=[UserController, AuthController])
+routers = Router(
+    path="/", route_handlers=[UserController, AuthController, PostController]
+)
