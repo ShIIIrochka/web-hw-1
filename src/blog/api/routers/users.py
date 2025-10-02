@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from litestar import Controller, Request, get, post
+from litestar import Controller, Request, get, post, put
 from litestar.datastructures import State
 from litestar.exceptions import NotAuthorizedException
 from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
@@ -30,7 +30,7 @@ class UserController(Controller):
             raise NotAuthorizedException
         return user
 
-    @post(
+    @put(
         path="/update",
         dto=UpdateUserDTO,
         return_dto=UserDTO,
