@@ -1,26 +1,28 @@
 # -*- coding: utf-8 -*-
 
-from jam.aio import Jam
 from jam.exceptions import TokenLifeTimeExpired
 
 from blog.application.exceptions.auth import AccessTokenExpiredError, InvalidToken
 from blog.domain.entities import User
 from blog.domain.value_objects.auth_payload import JWTPayload
 from blog.domain.value_objects.tokens import JWT
+from blog.infra.providers.interfaces import AuthProvider
 
 
-class UserAuthService:
+class AuthService:
     """Сервис для авторизации пользователей."""
 
-    def __init__(self, jam: Jam, access_exp: int) -> None:
+    def __init__(self, auth_provider: AuthProvider, access_exp: int, refresh_exp: int) -> None:
         """Конструктор.
 
         Args:
-            jam (Jam): Инстанс джема
+            auth_provider (AuthProvider): Провайдер аутентификации
             access_exp (int): Время жизни access токена
+            refresh_exp (int): Время жизни refresh токена
         """
-        self._jam = jam
+        self.auth_provider = auth_provider
         self.access_exp = access_exp
+        self.refresh_exp = refresh_exp
 
     async def auth_user(self, user: User) -> JWT:
         """Авторизация пользователя.
@@ -31,25 +33,18 @@ class UserAuthService:
         Returns:
             JWT: Access и refresh токены
         """
-        access_token = await self._jam.gen_jwt_token(
-            payload=(
-                await self._jam.make_payload(
-                    exp=self.access_exp,
-                    **JWTPayload.make_payload(user, "access").__dict__,
-                )
-            )
+        access_token = await self.auth_provider.create(
+            data=JWTPayload.make_payload(user, "access").__dict__,
+            exp=self.access_exp
         )
-        refresh_token = await self._jam.gen_jwt_token(
-            payload=(
-                await self._jam.make_payload(
-                    **JWTPayload.make_payload(user, "refresh").__dict__
-                )
-            )
+        refresh_token = await self.auth_provider.create(
+            data=JWTPayload.make_payload(user, "refresh").__dict__,
+            exp=self.refresh_exp
         )
 
         return JWT(refresh=refresh_token, access=access_token)
 
-    async def decode_access_token(self, token: str) -> JWTPayload:
+    async def get_payload(self, token: str) -> JWTPayload:
         """Декодирование access токена.
 
         Args:
@@ -63,9 +58,7 @@ class UserAuthService:
             JWTPayload: Пейлоад токена
         """
         try:
-            payload = await self._jam.verify_jwt_token(
-                token=token, check_exp=True, check_list=False
-            )
+            payload = await self.auth_provider.verify(token=token)
         except TokenLifeTimeExpired:
             raise AccessTokenExpiredError
         except ValueError:
