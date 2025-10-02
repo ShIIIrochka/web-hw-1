@@ -4,7 +4,7 @@ from bson import ObjectId
 
 from blog.domain.entities.post import Post
 from blog.domain.entities.user import User
-from blog.infra.repositories.abc_repo import BaseRepository
+from blog.domain.repositories.abc_repo import BaseRepository
 
 
 class PostService:

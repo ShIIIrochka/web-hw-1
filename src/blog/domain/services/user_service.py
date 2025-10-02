@@ -2,7 +2,7 @@
 
 from blog.domain.exceptions.user import UserNotFoundError
 from blog.domain.entities.user import User
-from blog.infra.repositories.abc_repo import BaseRepository
+from blog.domain.repositories.abc_repo import BaseRepository
 
 
 class UserService:

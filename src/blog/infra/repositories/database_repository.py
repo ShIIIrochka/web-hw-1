@@ -6,7 +6,7 @@ from bson import ObjectId
 from pymongo.asynchronous.collection import AsyncCollection
 
 from blog.infra.gateways.interfaces import DBGateway
-from blog.infra.repositories.abc_repo import BaseRepository
+from blog.domain.repositories.abc_repo import BaseRepository
 
 
 class MongoRepository(BaseRepository):
