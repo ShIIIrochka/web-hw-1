@@ -16,8 +16,8 @@ class User(BaseModel):
     email: str
     login: str
     password: str
-    created_at: datetime  # Дата и время создания
-    updated_at: datetime  # Дата и время последнего редактирования
+    created_at: datetime = datetime.now()
+    updated_at: datetime = datetime.now()
 
     @classmethod
     def from_raw(cls, raw: dict[str, Any]) -> User:
@@ -36,5 +36,5 @@ class User(BaseModel):
             created_at=raw["created_at"],
             updated_at=raw["updated_at"],
         )
-        user._id = raw["_id"]
+        user._id = str(raw["_id"])
         return user
