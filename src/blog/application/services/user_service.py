@@ -64,6 +64,8 @@ class UserService:
         """
         from bson import ObjectId
 
+        data.pop("_id", None)
+
         await self._repo.update({"_id": ObjectId(user.id)}, {"$set": data})
         updated_user = await self.get_user_by_id(str(user.id))
         return updated_user
