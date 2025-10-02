@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from blog.application.exceptions.user import UserNotFoundError
-from blog.domain.entities import User
+from blog.domain.entities.user import User
 from blog.infra.repositories.abc_repo import BaseRepository
 
 
@@ -39,6 +39,19 @@ class UserService:
         else:
             raise UserNotFoundError
 
+    async def create_user(self, data: dict) -> User:
+        """Создание пользователя.
+
+        Args:
+            data (dict): Данные для создания
+
+        Returns:
+            User: Созданный объект пользователя
+        """
+        user_id = await self._repo.add(data)
+        user = await self.get_user_by_id(str(user_id))
+        return user
+
     async def update_user(self, user: User, data: dict) -> User:
         """Обновление данных пользователя.
 
@@ -54,3 +67,16 @@ class UserService:
         await self._repo.update({"_id": ObjectId(user.id)}, {"$set": data})
         updated_user = await self.get_user_by_id(str(user.id))
         return updated_user
+
+    async def delete_user(self, user: User) -> bool:
+        """Удаление пользователя.
+
+        Args:
+            user (User): Объект пользователя
+
+        Returns:
+            bool: Статус удаления
+        """
+        from bson import ObjectId
+
+        return await self._repo.delete({"_id": ObjectId(user.id)})
