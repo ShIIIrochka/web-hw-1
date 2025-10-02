@@ -2,6 +2,7 @@
 
 from litestar import Controller, Request, Response, post
 from litestar.datastructures import Cookie, State
+from litestar.exceptions import ValidationException
 from punq import Container
 
 from blog.domain.services.auth_service import AuthService
@@ -33,7 +34,10 @@ class AuthController(Controller):
 
         user_service: UserService = container.resolve(UserService)
         auth_service: AuthService = container.resolve(AuthService)
-        user = await user_service.create_user(data.__dict__)
+        try:
+            user = await user_service.create_user(data.__dict__)
+        except ValueError:
+            raise ValidationException
         tokens = await auth_service.auth_user(user)
         return Response(
             tokens,

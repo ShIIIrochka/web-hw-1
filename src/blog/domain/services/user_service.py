@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from email_validator import validate_email
 
 from blog.domain.exceptions.user import UserNotFoundError
 from blog.domain.entities.user import User
@@ -48,6 +49,11 @@ class UserService:
         Returns:
             User: Созданный объект пользователя
         """
+        try:
+            validate_email(data["email"])
+        except Exception:
+            raise ValueError
+
         user_id = await self._repo.add(data)
         user = await self.get_user_by_id(str(user_id))
         return user
