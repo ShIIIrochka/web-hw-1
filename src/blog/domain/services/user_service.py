@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from blog.application.exceptions.user import UserNotFoundError
+from blog.domain.exceptions.user import UserNotFoundError
 from blog.domain.entities.user import User
 from blog.infra.repositories.abc_repo import BaseRepository
 

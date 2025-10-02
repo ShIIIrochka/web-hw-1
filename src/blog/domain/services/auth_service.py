@@ -2,7 +2,7 @@
 
 from jam.exceptions import TokenLifeTimeExpired
 
-from blog.application.exceptions.auth import (
+from blog.domain.exceptions.auth import (
     AccessTokenExpiredError,
     InvalidToken,
 )

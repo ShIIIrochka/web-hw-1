@@ -8,8 +8,8 @@ from litestar.middleware import (
     DefineMiddleware,
 )
 
-from blog.application.services.auth_service import AuthService
-from blog.application.services.user_service import UserService
+from blog.domain.services.auth_service import AuthService
+from blog.domain.services.user_service import UserService
 
 
 class AuthMiddleware(AbstractAuthenticationMiddleware):

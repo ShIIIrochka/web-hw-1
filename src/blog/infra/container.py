@@ -2,9 +2,9 @@
 from jam.aio import Jam
 from punq import Container
 
-from blog.application.services.auth_service import AuthService
-from blog.application.services.post_service import PostService
-from blog.application.services.user_service import UserService
+from blog.domain.services.auth_service import AuthService
+from blog.domain.services.post_service import PostService
+from blog.domain.services.user_service import UserService
 from blog.infra.config import Config
 from blog.infra.gateways.database import MongoGateway
 from blog.infra.gateways.interfaces import DBGateway

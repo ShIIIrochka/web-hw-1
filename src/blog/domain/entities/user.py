@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from src.blog.domain.entities.base_model import BaseModel
+from blog.domain.entities.base_model import BaseModel
 
 
 @dataclass

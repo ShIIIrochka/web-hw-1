@@ -6,9 +6,9 @@ from litestar.exceptions import NotAuthorizedException
 from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from punq import Container
 
-from blog.application.services.user_service import UserService
+from blog.domain.services.user_service import UserService
 from blog.domain.entities.user import User
-from blog.presentation.dto.users import UpdateUserDTO, UserDTO
+from blog.application.dto.users import UpdateUserDTO, UserDTO
 
 
 class UserController(Controller):
