@@ -8,4 +8,16 @@ from blog.domain.entities.user import User
 class UserDTO(DataclassDTO[User]):
     """DTO для определения пользователя."""
 
-    config = DTOConfig(max_nested_depth=2)
+    config = DTOConfig()
+
+
+class CreateUserDTO(DataclassDTO[User]):
+    """DTO для создания пользователя."""
+
+    config = DTOConfig(exclude={"updated_at", "created_at", "_id"})
+
+
+class UpdateUserDTO(DataclassDTO[User]):
+    """DTO для обновления пользователя."""
+
+    config = DTOConfig(exclude={"updated_at", "created_at", "_id"})

@@ -4,13 +4,13 @@ from litestar import Controller, Request, Response, post
 from litestar.datastructures import Cookie, State
 from punq import Container
 
-from blog.presentation.dto.tokens import JWTTokens
-from blog.presentation.dto.users import UserDTO
 from blog.application.services.auth_service import AuthService
 from blog.application.services.user_service import UserService
 from blog.domain.entities.user import User
 from blog.domain.value_objects.tokens import JWT
 from blog.infra.config import Config
+from blog.presentation.dto.tokens import JWTTokens
+from blog.presentation.dto.users import CreateUserDTO
 
 
 class AuthController(Controller):
@@ -21,7 +21,7 @@ class AuthController(Controller):
 
     @post(
         path="/register",
-        dto=UserDTO,
+        dto=CreateUserDTO,
         return_dto=JWTTokens,
     )
     async def register(
