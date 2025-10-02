@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import base64
-
-from email_validator import validate_email
-from email_validator.exceptions import EmailNotValidError
-from jam.aio import Jam
-
 from blog.application.exceptions.user import UserNotFoundError
 from blog.domain.entities import User
 from blog.infra.repositories.abc_repo import BaseRepository
@@ -17,19 +11,13 @@ class UserService:
     def __init__(
         self,
         repository: BaseRepository,
-        jam: Jam,
-        debug: bool,
     ) -> None:
         """Конструктор.
 
         Args:
             repository (BaseRepository): Репозиторий для работы с БД
-            jam (Jam): Инстанс Jam
-            debug (bool): Режим работы приложения
         """
         self._repo = repository
-        self._jam = jam
-        self.debug = debug
 
     async def get_user_by_id(self, user_id: str) -> User:
         """Получение пользователя по ID.
