@@ -5,7 +5,7 @@ from litestar.datastructures import State
 from litestar.exceptions import NotAuthorizedException
 from punq import Container
 
-from blog.application.dto.users import UserDTO
+from blog.presentation.dto.users import UserDTO
 from blog.application.services.user_service import UserService
 from blog.domain.entities.user import User
 

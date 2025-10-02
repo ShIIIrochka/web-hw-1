@@ -8,4 +8,4 @@ from blog.domain.entities.user import User
 class UserDTO(DataclassDTO[User]):
     """DTO для определения пользователя."""
 
-    config = DTOConfig()
+    config = DTOConfig(max_nested_depth=2)

@@ -4,8 +4,8 @@ from litestar import Controller, Request, Response, post
 from litestar.datastructures import Cookie, State
 from punq import Container
 
-from blog.application.dto.tokens import JWTTokens
-from blog.application.dto.users import UserDTO
+from blog.presentation.dto.tokens import JWTTokens
+from blog.presentation.dto.users import UserDTO
 from blog.application.services.auth_service import AuthService
 from blog.application.services.user_service import UserService
 from blog.domain.entities.user import User
