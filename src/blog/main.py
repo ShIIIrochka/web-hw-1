@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from litestar import Litestar
+from litestar.di import Provide
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.spec import Components, SecurityScheme
 
@@ -25,7 +26,7 @@ openapi_config = OpenAPIConfig(
 app = Litestar(
     route_handlers=[routers],
     debug=True,
-    dependencies={"container": container_builder},
+    dependencies={"container": Provide(container_builder)},
     middleware=middlewares,
     openapi_config=openapi_config,
 )
