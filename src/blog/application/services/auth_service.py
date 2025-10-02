@@ -79,3 +79,44 @@ class AuthService:
             user_id=payload["user_id"],
             token_type=payload["token_type"],
         )
+
+    async def refresh_tokens(self, token: str) -> JWT:
+        """Обновление токенов.
+
+        Args:
+            token (str): Refresh токен
+
+        Raises:
+            AccessTokenExpiredError: Если время жизни токена истекло
+            InvalidToken: Если токен не валиден
+
+        Returns:
+            JWT: Новые access и refresh токены
+        """
+        try:
+            payload = await self.auth_provider.verify(token=token)
+        except TokenLifeTimeExpired:
+            raise AccessTokenExpiredError
+        except ValueError:
+            raise InvalidToken
+
+        try:
+            if payload["token_type"] != "refresh":
+                raise InvalidToken
+        except KeyError:
+            raise InvalidToken
+
+        access_token = await self.auth_provider.create(
+            data=JWTPayload(
+                user_id=payload["user_id"], token_type="access"
+            ).__dict__,
+            exp=self.access_exp,
+        )
+        refresh_token = await self.auth_provider.create(
+            data=JWTPayload(
+                user_id=payload["user_id"], token_type="refresh"
+            ).__dict__,
+            exp=self.refresh_exp,
+        )
+
+        return JWT(refresh=refresh_token, access=access_token)
