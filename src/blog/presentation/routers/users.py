@@ -3,11 +3,12 @@
 from litestar import Controller, Request, get, post
 from litestar.datastructures import State
 from litestar.exceptions import NotAuthorizedException
+from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from punq import Container
 
-from blog.presentation.dto.users import UserDTO
 from blog.application.services.user_service import UserService
 from blog.domain.entities.user import User
+from blog.presentation.dto.users import UpdateUserDTO, UserDTO
 
 
 class UserController(Controller):
@@ -19,6 +20,7 @@ class UserController(Controller):
     @get(
         path="/",
         return_dto=UserDTO,
+        status_code=HTTP_200_OK,
         security=[{"BearerAuth": []}],
     )
     async def get_user(self, request: Request[User, str, State]) -> User:
@@ -30,8 +32,9 @@ class UserController(Controller):
 
     @post(
         path="/update",
-        dto=UserDTO,
+        dto=UpdateUserDTO,
         return_dto=UserDTO,
+        status_code=HTTP_200_OK,
         security=[{"BearerAuth": []}],
     )
     async def update_user(
@@ -51,14 +54,15 @@ class UserController(Controller):
 
     @post(
         path="/delete",
+        status_code=HTTP_204_NO_CONTENT,
         security=[{"BearerAuth": []}],
     )
     async def delete_user(
         self, request: Request[User, str, State], container: Container
-    ) -> bool:
+    ) -> None:
         """Удаление информации о пользователе"""
         user = request.user
         if not user:
             raise NotAuthorizedException
         user_service = container.resolve(UserService)
-        return await user_service.delete_user(user)
+        await user_service.delete_user(user)
