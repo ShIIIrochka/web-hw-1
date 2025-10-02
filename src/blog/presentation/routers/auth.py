@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from litestar import Controller, Response, post
-from litestar.datastructures import Cookie
+from litestar import Controller, Request, Response, post
+from litestar.datastructures import Cookie, State
 from punq import Container
 
 from blog.application.dto.tokens import JWTTokens
@@ -35,6 +35,32 @@ class AuthController(Controller):
         auth_service: AuthService = container.resolve(AuthService)
         user = await user_service.create_user(data.__dict__)
         tokens = await auth_service.auth_user(user)
+        return Response(
+            tokens,
+            cookies=[
+                Cookie(
+                    key="token",
+                    value=tokens.refresh,
+                    httponly=True,
+                    samesite="strict",
+                    max_age=container.resolve(Config).refresh_exp,
+                ),
+            ],
+            headers={"Authorization": f"Bearer {tokens.access}"},
+        )
+
+    @post(
+        path="/refresh",
+        return_dto=JWTTokens,
+    )
+    async def refresh(
+        self,
+        request: Request[User, str, State],
+        container: Container = None,
+    ) -> Response[JWT]:
+        """Обновление токенов."""
+        auth_service: AuthService = container.resolve(AuthService)
+        tokens = await auth_service.refresh_tokens(request.cookies.get("token"))
         return Response(
             tokens,
             cookies=[
