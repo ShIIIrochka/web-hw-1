@@ -5,9 +5,10 @@ from litestar.datastructures import Cookie, State
 from litestar.exceptions import ValidationException, NotAuthorizedException
 from punq import Container
 
-from blog.domain.services.auth_service import AuthService
-from blog.domain.services.user_service import UserService
+from blog.application.services.auth_service import AuthService
+from blog.application.services import UserService
 from blog.domain.entities.user import User
+from blog.domain.exceptions.user import EmailSyntaxError
 from blog.domain.value_objects.tokens import JWT
 from blog.infra.config import Config
 from blog.api.dto.tokens import JWTTokens
@@ -36,8 +37,8 @@ class AuthController(Controller):
         auth_service: AuthService = container.resolve(AuthService)
         try:
             user = await user_service.create_user(data.__dict__)
-        except ValueError:
-            raise ValidationException
+        except EmailSyntaxError:
+            raise ValidationException(detail="Invalid email format.")
         tokens = await auth_service.auth_user(user)
         return Response(
             tokens,

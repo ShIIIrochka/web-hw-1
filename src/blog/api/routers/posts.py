@@ -10,7 +10,7 @@ from litestar.exceptions import (
 from litestar.status_codes import HTTP_204_NO_CONTENT
 from punq import Container
 
-from blog.domain.services.post_service import PostService
+from blog.application.services.post_service import PostService
 from blog.domain.entities.post import Post
 from blog.domain.entities.user import User
 from blog.api.dto.posts import CreatePostDTO, PostDTO, UpdatePostDTO
