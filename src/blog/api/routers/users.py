@@ -9,6 +9,7 @@ from punq import Container
 from blog.application.services import UserService
 from blog.domain.entities.user import User
 from blog.api.dto.users import UpdateUserDTO, UserDTO
+from blog.domain.exceptions.user import EmailSyntaxError
 
 
 class UserController(Controller):
@@ -51,8 +52,8 @@ class UserController(Controller):
         user_service = container.resolve(UserService)
         try:
             user = await user_service.update_user(user, data.__dict__)
-        except ValueError:
-            raise ValidationException
+        except EmailSyntaxError:
+            raise ValidationException(detail="Invalid email format.")
         return user
 
     @post(
