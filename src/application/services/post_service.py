@@ -1,0 +1,105 @@
+# -*- coding: utf-8 -*-
+
+from bson import ObjectId
+from bson.errors import InvalidId
+
+from src.api.dto.posts import CreatePostDTO, UpdatePostDTO
+from src.domain.entities.post import Post
+from src.domain.entities.user import User
+from src.domain.exceptions.post import PostNotFoundError, PostPermissionError
+from src.domain.repositories.abc_repo import BaseRepository
+
+
+class PostService:
+    """Сервис для работы с постами."""
+
+    def __init__(self, repository: BaseRepository) -> None:
+        """Конструктор.
+
+        Args:
+            repository (BaseRepository): Репозиторий для работы с БД
+        """
+        self._repo = repository
+
+    async def get_post_by_id(self, post_id: str) -> Post:
+        """Получение поста по ID.
+
+        Args:
+            post_id (str): ID поста
+
+        Returns:
+            Post: Объект поста
+
+        Raises:
+            ValueError: Если пост не найден.
+        """
+
+        try:
+            post = await self._repo.get_one({"_id": ObjectId(post_id)})
+        except InvalidId:
+            raise PostNotFoundError
+        if post:
+            return Post.from_raw(post)
+        else:
+            raise PostNotFoundError
+
+    async def create_post(self, user: User, data: CreatePostDTO) -> Post:
+        """Создание поста.
+
+        Args:
+            user (User): Автор поста
+            data (dict): Данные для создания
+
+        Returns:
+            Post: Созданный объект поста
+        """
+        post = Post.create(user, data.title, data.content)
+        await self._repo.add(post.__dict__)
+        return post
+
+    async def update_post(
+        self, user: User, post: Post, update_data: UpdatePostDTO
+    ) -> Post:
+        """Обновление данных поста.
+
+        Args:
+            user (User): Автор поста
+            post (Post): Объект поста
+            update_data (dict): Данные для обновления
+
+        Raises:
+            PostPermissionError: Если пользователь не является автором поста
+
+        Returns:
+            Post: Обновленный объект поста
+        """
+
+        if user.id != post.author_id:
+            raise PostPermissionError
+
+        updated_post = post.update(
+            title=update_data.title, content=update_data.content
+        )
+        data = updated_post.__dict__
+        data.pop("_id", None)
+
+        await self._repo.update({"_id": ObjectId(post.id)}, {"$set": data})
+        return updated_post
+
+    async def delete_post(self, user: User, post: Post) -> bool:
+        """Удаление поста.
+
+        Args:
+            user (User): Автор поста
+            post (Post): Объект поста
+
+        Returns:
+            bool: Статус удаления
+        """
+
+        if user.id != post.author_id:
+            raise PermissionError(
+                "You do not have permission to delete this post"
+            )
+
+        return await self._repo.delete({"_id": ObjectId(post.id)})
