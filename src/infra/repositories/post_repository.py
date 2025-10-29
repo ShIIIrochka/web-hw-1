@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from dataclasses import asdict
-from typing import Any
+from typing import Any, Mapping, Sequence
 
 from bson import DBRef, ObjectId
 from pymongo.asynchronous.collection import AsyncCollection
@@ -70,7 +70,7 @@ class PostRepository(BasePostRepository):
             query = {"_id": ObjectId(id)}
         except Exception:
             raise ValueError
-        pipeline = [
+        pipeline: Sequence[Mapping[str, Any]] = [
             {"$match": query},
             {
                 "$lookup": {
@@ -101,7 +101,7 @@ class PostRepository(BasePostRepository):
             list[dict[str, Any]]: Результат поиска
         """
         collection = await self._init_collection()
-        pipeline = [
+        pipeline: Sequence[Mapping[str, Any]] = [
             {"$match": query},
             {
                 "$lookup": {

@@ -45,7 +45,7 @@ class Post(BaseModel):
                 Category.from_raw(cat) for cat in raw.get("categories_full", [])
             ],
         )
-        post._id = str(raw["_id"])
+        post._id = raw["_id"]
         return post
 
     @classmethod

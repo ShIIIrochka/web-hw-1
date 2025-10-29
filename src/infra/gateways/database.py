@@ -18,7 +18,7 @@ class MongoGateway(DBGateway):
         Returns:
             None
         """
-        self.client = AsyncMongoClient(uri)
+        self.client: AsyncMongoClient = AsyncMongoClient(uri)
         self.db = self.client[db_name]
 
     @property

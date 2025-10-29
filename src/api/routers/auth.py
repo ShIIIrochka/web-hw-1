@@ -72,9 +72,11 @@ class AuthController(Controller):
     ) -> Response[JWT]:
         """Обновление токенов."""
         auth_service: AuthService = container.resolve(AuthService)
-        if not request.cookies.get("token"):
+        token: str | None = request.cookies.get("token")
+        if token:
+            tokens = await auth_service.refresh_tokens(token)
+        else:
             raise NotAuthorizedException
-        tokens = await auth_service.refresh_tokens(request.cookies.get("token"))
         return Response(
             tokens,
             cookies=[

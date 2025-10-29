@@ -2,7 +2,7 @@
 
 from litestar import Controller, Request, delete, get, post, put
 from litestar.datastructures import State
-from litestar.dto import DTOData, DataclassDTO
+from litestar.dto import DTOData
 from litestar.exceptions import (
     NotAuthorizedException,
     NotFoundException,
@@ -57,14 +57,14 @@ class PostController(Controller):
 
     @put(
         "/{post_id:str}/update",
-        dto=DataclassDTO[UpdatePostDTO],
+        dto=UpdatePostDTO,
         response_dto=PostDTO,
         security=[{"BearerAuth": []}],
     )
     async def update_post(
         self,
         post_id: str,
-        data: UpdatePostDTO,
+        data: DTOData[Post],
         container: Container,
         request: Request[User, str, State],
     ) -> Post:

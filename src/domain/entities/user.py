@@ -76,5 +76,5 @@ class User(BaseModel):
             created_at=raw["created_at"],
             updated_at=raw["updated_at"],
         )
-        user._id = str(raw["_id"])
+        user._id = raw["_id"]
         return user

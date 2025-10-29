@@ -82,7 +82,8 @@ class PostService:
             raise PostPermissionError
 
         updated_post = post.update(
-            title=update_data.title, content=update_data.content
+            title=update_data.as_builtins()["title"],
+            content=update_data.as_builtins()["content"],
         )
         await self._repo.update(post.id, updated_post)
         return updated_post

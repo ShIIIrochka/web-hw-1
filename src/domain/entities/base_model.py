@@ -9,7 +9,7 @@ from bson import ObjectId
 class BaseModel:
     """Базовая модель для работы."""
 
-    _id: str = field(default_factory=ObjectId, kw_only=True)
+    _id: ObjectId = field(default_factory=ObjectId, kw_only=True)
 
     @property
     def id(self) -> str:
