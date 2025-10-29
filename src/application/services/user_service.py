@@ -4,7 +4,6 @@ from dataclasses import asdict
 from bson.errors import InvalidId
 from email_validator import validate_email
 
-from api.dto.users import LoginUserDTO
 from src.api.dto.users import CreateUserDTO
 from src.domain.entities.user import User
 from src.domain.exceptions.user import EmailSyntaxError, UserNotFoundError
@@ -25,7 +24,7 @@ class UserService:
         """
         self._repo = repository
 
-    async def get_user(self, user: LoginUserDTO) -> User:
+    async def get_user(self, password: str, email: str) -> User:
         """Получение пользователя по логину.
 
         Args:
@@ -38,7 +37,7 @@ class UserService:
             UserNotFoundError: Если пользователь не найден.
         """
         found_user = await self._repo.get_one(
-            {"password": user.password, "email": user.email}
+            {"password": password, "email": email}
         )
         if found_user:
             return User.from_raw(found_user)

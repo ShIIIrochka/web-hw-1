@@ -2,7 +2,7 @@
 
 from litestar import Controller, Request, Response, post
 from litestar.datastructures import Cookie, State
-from litestar.dto import DataclassDTO
+from litestar.dto import DTOData
 from litestar.exceptions import (
     NotAuthorizedException,
     NotFoundException,
@@ -91,19 +91,22 @@ class AuthController(Controller):
 
     @post(
         path="/login",
-        dto=DataclassDTO[LoginUserDTO],
+        dto=LoginUserDTO,
         return_dto=JWTTokens,
     )
     async def login(
         self,
-        data: LoginUserDTO,
+        data: DTOData[User],
         container: Container,
     ) -> Response[JWT]:
         """Вход пользователя."""
         user_service: UserService = container.resolve(UserService)
         auth_service: AuthService = container.resolve(AuthService)
         try:
-            user = await user_service.get_user(data)
+            user = await user_service.get_user(
+                data.as_builtins().get("password"),
+                data.as_builtins().get("email"),
+            )
         except UserNotFoundError as e:
             raise NotFoundException(detail=str(e))
         except EmailSyntaxError as e:

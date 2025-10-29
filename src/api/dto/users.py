@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from dataclasses import dataclass
 
 from litestar.dto import DTOConfig, DataclassDTO
 
@@ -25,9 +24,7 @@ class UpdateUserDTO(DataclassDTO[User]):
     config = DTOConfig(include={"email", "login"})
 
 
-@dataclass
-class LoginUserDTO:
+class LoginUserDTO(DataclassDTO[User]):
     """DTO для логина пользователя."""
 
-    email: str
-    password: str
+    config = DTOConfig(include={"email", "password"})
