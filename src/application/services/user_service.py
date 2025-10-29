@@ -4,7 +4,6 @@ from email_validator import validate_email
 from litestar.dto import DTOData
 
 from domain.repositories.user_repository import BaseUserRepository
-from src.api.dto.users import CreateUserDTO
 from src.domain.entities.user import User
 from src.domain.exceptions.user import EmailSyntaxError, UserNotFoundError
 
@@ -23,11 +22,11 @@ class UserService:
         """
         self._repo = repository
 
-    async def get_user(self, password: str, email: str) -> User:
+    async def get_user(self, data: DTOData[User]) -> User:
         """Получение пользователя по логину.
 
         Args:
-            user (LoginUserDTO): Данные для логина
+            data (LoginUserDTO): Данные для логина
 
         Returns:
             User: Объект пользователя
@@ -36,7 +35,10 @@ class UserService:
             UserNotFoundError: Если пользователь не найден.
         """
         found_user = await self._repo.get_one(
-            {"password": password, "email": email}
+            {
+                "password": data.as_builtins()["password"],
+                "email": data.as_builtins()["email"],
+            }
         )
         if found_user:
             return found_user
@@ -64,7 +66,7 @@ class UserService:
         else:
             raise UserNotFoundError
 
-    async def create_user(self, user: CreateUserDTO) -> User:
+    async def create_user(self, user: User) -> User:
         """Создание пользователя.
 
         Args:
@@ -76,12 +78,12 @@ class UserService:
         Returns:
             User: Созданный объект пользователя
         """
-        await self._validate_email(user.email)  # type: ignore
+        await self._validate_email(user.email)
 
         user = User.create(
-            email=user.email,  # type: ignore
-            login=user.login,  # type: ignore
-            password=user.password,  # type: ignore
+            email=user.email,
+            login=user.login,
+            password=user.password,
         )
         await self._repo.add(user)
         return user

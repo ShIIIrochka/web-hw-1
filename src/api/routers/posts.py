@@ -2,7 +2,7 @@
 
 from litestar import Controller, Request, delete, get, post, put
 from litestar.datastructures import State
-from litestar.dto import DataclassDTO
+from litestar.dto import DTOData, DataclassDTO
 from litestar.exceptions import (
     NotAuthorizedException,
     NotFoundException,
@@ -37,13 +37,13 @@ class PostController(Controller):
 
     @post(
         "/create",
-        dto=DataclassDTO[CreatePostDTO],
+        dto=CreatePostDTO,
         response_dto=PostDTO,
         security=[{"BearerAuth": []}],
     )
     async def create_post(
         self,
-        data: CreatePostDTO,
+        data: DTOData[Post],
         container: Container,
         request: Request[User, str, State],
     ) -> Post:

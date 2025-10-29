@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from src.api.dto.posts import CreatePostDTO, UpdatePostDTO
+from litestar.dto import DTOData
+
 from src.domain.entities.post import Post
 from src.domain.entities.user import User
 from src.domain.exceptions.post import PostNotFoundError, PostPermissionError
@@ -40,7 +41,7 @@ class PostService:
         else:
             raise PostNotFoundError
 
-    async def create_post(self, user: User, data: CreatePostDTO) -> Post:
+    async def create_post(self, user: User, data: DTOData[Post]) -> Post:
         """Создание поста.
 
         Args:
@@ -50,12 +51,18 @@ class PostService:
         Returns:
             Post: Созданный объект поста
         """
-        post = Post.create(user, data.title, data.content, data.categories)
+
+        post = Post.create(
+            user,
+            data.as_builtins()["title"],
+            data.as_builtins()["content"],
+            data.as_builtins()["categories"],
+        )
         await self._repo.add(post)
         return post
 
     async def update_post(
-        self, user: User, post: Post, update_data: UpdatePostDTO
+        self, user: User, post: Post, update_data: DTOData[Post]
     ) -> Post:
         """Обновление данных поста.
 

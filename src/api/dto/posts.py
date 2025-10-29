@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from dataclasses import dataclass
 
 from litestar.dto import DTOConfig, DataclassDTO
 
@@ -13,18 +12,13 @@ class PostDTO(DataclassDTO[Post]):
     config = DTOConfig(underscore_fields_private=True)
 
 
-@dataclass
-class CreatePostDTO:
+class CreatePostDTO(DataclassDTO[Post]):
     """DTO для создания поста."""
 
-    title: str
-    content: str
-    categories: list[str]
+    config = DTOConfig(include={"title", "content", "category_ids"})
 
 
-@dataclass
 class UpdatePostDTO:
     """DTO для обновления поста."""
 
-    title: str
-    content: str
+    config = DTOConfig(include={"title", "content", "category_ids"})

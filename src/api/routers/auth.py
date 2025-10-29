@@ -43,7 +43,7 @@ class AuthController(Controller):
         user_service: UserService = container.resolve(UserService)
         auth_service: AuthService = container.resolve(AuthService)
         try:
-            user = await user_service.create_user(data)  # type: ignore
+            user = await user_service.create_user(data)
         except EmailSyntaxError:
             raise ValidationException(detail="Invalid email format.")
         tokens = await auth_service.auth_user(user)
@@ -103,10 +103,7 @@ class AuthController(Controller):
         user_service: UserService = container.resolve(UserService)
         auth_service: AuthService = container.resolve(AuthService)
         try:
-            user = await user_service.get_user(
-                data.as_builtins().get("password"),
-                data.as_builtins().get("email"),
-            )
+            user = await user_service.get_user(data)
         except UserNotFoundError as e:
             raise NotFoundException(detail=str(e))
         except EmailSyntaxError as e:
