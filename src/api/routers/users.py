@@ -16,11 +16,11 @@ from src.domain.exceptions.user import EmailSyntaxError
 class UserController(Controller):
     """Контроллер для работы с пользователями."""
 
-    path = "/user"
+    path = "/users"
     tags = ["Users"]
 
     @get(
-        path="/",
+        path="/me",
         return_dto=UserDTO,
         status_code=HTTP_200_OK,
         security=[{"BearerAuth": []}],
@@ -51,14 +51,8 @@ class UserController(Controller):
             raise NotAuthorizedException
 
         user_service = container.resolve(UserService)
-        email: str = data.as_builtins()["email"]
-        login: str = data.as_builtins()["login"]
         try:
-            updated_user = await user_service.update_user(
-                user,
-                login,
-                email,
-            )
+            updated_user = await user_service.update_user(user, data)
         except EmailSyntaxError:
             raise ValidationException(detail="Invalid email format.")
         return updated_user

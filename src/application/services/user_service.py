@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-from dataclasses import asdict
 
-from bson.errors import InvalidId
 from email_validator import validate_email
+from litestar.dto import DTOData
 
+from domain.repositories.user_repository import BaseUserRepository
 from src.api.dto.users import CreateUserDTO
 from src.domain.entities.user import User
 from src.domain.exceptions.user import EmailSyntaxError, UserNotFoundError
-from src.domain.repositories.abc_repo import BaseRepository
 
 
 class UserService:
@@ -15,7 +14,7 @@ class UserService:
 
     def __init__(
         self,
-        repository: BaseRepository,
+        repository: BaseUserRepository,
     ) -> None:
         """Конструктор.
 
@@ -40,7 +39,7 @@ class UserService:
             {"password": password, "email": email}
         )
         if found_user:
-            return User.from_raw(found_user)
+            return found_user
         else:
             raise UserNotFoundError
 
@@ -56,14 +55,12 @@ class UserService:
         Raises:
             UserNotFoundError: Если пользователь не найден.
         """
-        from bson import ObjectId
-
         try:
-            user = await self._repo.get_one({"_id": ObjectId(user_id)})
-        except InvalidId:
+            user = await self._repo.get_by_id(user_id)
+        except ValueError:
             raise UserNotFoundError
         if user:
-            return User.from_raw(user)
+            return user
         else:
             raise UserNotFoundError
 
@@ -86,16 +83,15 @@ class UserService:
             login=user.login,  # type: ignore
             password=user.password,  # type: ignore
         )
-        await self._repo.add(user.__dict__)
+        await self._repo.add(user)
         return user
 
-    async def update_user(self, user: User, email: str, login: str) -> User:
+    async def update_user(self, user: User, update_data: DTOData[User]) -> User:
         """Обновление данных пользователя.
 
         Args:
             user (User): Объект пользователя
-            email (str): Новый email
-            login (str): Новый логин
+            update_data (DTOData[User]): Данные для обновления
 
         Raises:
             EmailSyntaxError: Если email некорректен
@@ -103,20 +99,19 @@ class UserService:
         Returns:
             User: Обновленный объект пользователя
         """
-        from bson import ObjectId
 
+        email: str = update_data.as_builtins()["email"]
+        login: str = update_data.as_builtins()["login"]
         await self._validate_email(email)
 
         updated_user: User = user.update(
             email=email,
             login=login,
         )
-        data = asdict(updated_user)
-        data.pop("_id", None)
-
-        await self._repo.update(
-            {"_id": ObjectId(updated_user.id)}, {"$set": data}
-        )
+        try:
+            await self._repo.update(updated_user.id, updated_user)
+        except ValueError:
+            raise UserNotFoundError
         return user
 
     async def delete_user(self, user_id: str) -> bool:
@@ -128,9 +123,10 @@ class UserService:
         Returns:
             bool: Статус удаления
         """
-        from bson import ObjectId
-
-        return await self._repo.delete({"_id": ObjectId(user_id)})
+        try:
+            return await self._repo.delete(user_id)
+        except ValueError:
+            raise UserNotFoundError
 
     @staticmethod
     async def _validate_email(email: str) -> None:

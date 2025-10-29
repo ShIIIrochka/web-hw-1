@@ -7,6 +7,7 @@ from datetime import datetime
 
 from bson import ObjectId
 
+from domain.entities.category import Category
 from src.domain.entities.base_model import BaseModel
 from src.domain.entities.user import User
 
@@ -15,9 +16,11 @@ from src.domain.entities.user import User
 class Post(BaseModel):
     """Модель поста."""
 
-    author_id: str
+    author_id: str | ObjectId
     title: str
     content: str
+    category_ids: list[str | ObjectId] | None = None
+    categories: list[Category] | None = None
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
 
@@ -37,18 +40,29 @@ class Post(BaseModel):
             content=raw["content"],
             created_at=raw["created_at"],
             updated_at=raw["updated_at"],
+            category_ids=raw["category_ids"],
+            categories=[
+                Category.from_raw(cat) for cat in raw.get("categories_full", [])
+            ],
         )
         post._id = str(raw["_id"])
         return post
 
     @classmethod
-    def create(cls, author: User, title: str, content: str) -> Post:
+    def create(
+        cls,
+        author: User,
+        title: str,
+        content: str,
+        category_ids: list[str | ObjectId] | None,
+    ) -> Post:
         """Создает новый пост.
 
         Args:
             author (User): Автор поста
             title (str): Заголовок поста
             content (str): Содержимое поста
+            category_ids (list[str | ObjectId] | None): Список ID категорий
 
         Returns:
             Post: Созданный пост
@@ -57,7 +71,7 @@ class Post(BaseModel):
             author_id=author.id,
             title=title,
             content=content,
-            _id=str(ObjectId()),
+            category_ids=category_ids,
         )
         return post
 
@@ -75,3 +89,13 @@ class Post(BaseModel):
         self.content = content
         self.updated_at = datetime.now()
         return self
+
+    def add_category(self, category_id: str | ObjectId) -> None:
+        """Добавляет категорию к посту.
+
+        Args:
+            category_id (str | ObjectId): ID категории
+        """
+        if self.category_ids is None:
+            self.category_ids = []
+        self.category_ids.append(category_id)

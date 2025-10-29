@@ -16,6 +16,7 @@ class User(BaseModel):
     email: str
     login: str
     password: str
+    saved_posts: list[str] | None = None
     created_at: datetime = datetime.now()
     updated_at: datetime = datetime.now()
 

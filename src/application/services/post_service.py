@@ -1,19 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from bson import ObjectId
-from bson.errors import InvalidId
-
 from src.api.dto.posts import CreatePostDTO, UpdatePostDTO
 from src.domain.entities.post import Post
 from src.domain.entities.user import User
 from src.domain.exceptions.post import PostNotFoundError, PostPermissionError
-from src.domain.repositories.abc_repo import BaseRepository
+from src.domain.repositories.post_repository import BasePostRepository
 
 
 class PostService:
     """Сервис для работы с постами."""
 
-    def __init__(self, repository: BaseRepository) -> None:
+    def __init__(self, repository: BasePostRepository) -> None:
         """Конструктор.
 
         Args:
@@ -35,11 +32,11 @@ class PostService:
         """
 
         try:
-            post = await self._repo.get_one({"_id": ObjectId(post_id)})
-        except InvalidId:
+            post = await self._repo.get_by_id(post_id)
+        except ValueError:
             raise PostNotFoundError
         if post:
-            return Post.from_raw(post)
+            return post
         else:
             raise PostNotFoundError
 
@@ -53,8 +50,8 @@ class PostService:
         Returns:
             Post: Созданный объект поста
         """
-        post = Post.create(user, data.title, data.content)
-        await self._repo.add(post.__dict__)
+        post = Post.create(user, data.title, data.content, data.categories)
+        await self._repo.add(post)
         return post
 
     async def update_post(
@@ -80,10 +77,7 @@ class PostService:
         updated_post = post.update(
             title=update_data.title, content=update_data.content
         )
-        data = updated_post.__dict__
-        data.pop("_id", None)
-
-        await self._repo.update({"_id": ObjectId(post.id)}, {"$set": data})
+        await self._repo.update(post.id, updated_post)
         return updated_post
 
     async def delete_post(self, user: User, post: Post) -> bool:
@@ -102,4 +96,4 @@ class PostService:
                 "You do not have permission to delete this post"
             )
 
-        return await self._repo.delete({"_id": ObjectId(post.id)})
+        return await self._repo.delete(post.id)

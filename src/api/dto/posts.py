@@ -10,7 +10,7 @@ from src.domain.entities.post import Post
 class PostDTO(DataclassDTO[Post]):
     """DTO для поста."""
 
-    config = DTOConfig()
+    config = DTOConfig(underscore_fields_private=True)
 
 
 @dataclass
@@ -19,6 +19,7 @@ class CreatePostDTO:
 
     title: str
     content: str
+    categories: list[str]
 
 
 @dataclass

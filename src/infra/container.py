@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*2-
+
 from jam.aio import Jam
 from punq import Container
 
+from application.services.category_service import CategoryService
+from infra.repositories.category_repository import CategoryRepository
+from infra.repositories.post_repository import PostRepository
+from infra.repositories.user_repository import UserRepository
 from src.application.services.auth_service import AuthService
 from src.application.services.post_service import PostService
 from src.application.services.user_service import UserService
@@ -10,7 +15,6 @@ from src.infra.gateways.database import MongoGateway
 from src.infra.gateways.interfaces import DBGateway
 from src.infra.providers.interfaces import AuthProvider
 from src.infra.providers.jwt import JWTProvider
-from src.infra.repositories.database_repository import MongoRepository
 
 
 def container_builder() -> Container:
@@ -51,7 +55,7 @@ def container_builder() -> Container:
 
     container.register(
         "UserRepo",
-        factory=lambda: MongoRepository(
+        factory=lambda: UserRepository(
             gateway=container.resolve(DBGateway),
             collection_name="users",
         ),
@@ -66,9 +70,10 @@ def container_builder() -> Container:
 
     container.register(
         "PostRepo",
-        factory=lambda: MongoRepository(
+        factory=lambda: PostRepository(
             gateway=container.resolve(DBGateway),
             collection_name="posts",
+            categories_collection_name="categories",
         ),
     )
 
@@ -76,6 +81,21 @@ def container_builder() -> Container:
         PostService,
         factory=lambda: PostService(
             repository=container.resolve("PostRepo"),
+        ),
+    )
+
+    container.register(
+        "CategoryRepo",
+        factory=lambda: CategoryRepository(
+            gateway=container.resolve(DBGateway),
+            collection_name="categories",
+        ),
+    )
+
+    container.register(
+        CategoryService,
+        factory=lambda: CategoryService(
+            repository=container.resolve("CategoryRepo"),
         ),
     )
     return container

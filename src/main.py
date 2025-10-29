@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+from bson import ObjectId
 from litestar import Litestar
 from litestar.di import Provide
 from litestar.openapi.config import OpenAPIConfig
@@ -31,6 +31,9 @@ app = Litestar(
     dependencies={"container": Provide(container_builder)},
     middleware=middlewares,
     openapi_config=openapi_config,
+    type_encoders={
+        ObjectId: str,
+    },
 )
 
 app.state.container = container_builder()
