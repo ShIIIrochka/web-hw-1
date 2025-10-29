@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
+from dataclasses import asdict
 
 from bson.errors import InvalidId
 from email_validator import validate_email
 
 from api.dto.users import LoginUserDTO
-from src.api.dto.users import CreateUserDTO, UpdateUserDTO
+from src.api.dto.users import CreateUserDTO
 from src.domain.entities.user import User
 from src.domain.exceptions.user import EmailSyntaxError, UserNotFoundError
 from src.domain.repositories.abc_repo import BaseRepository
@@ -89,12 +90,13 @@ class UserService:
         await self._repo.add(user.__dict__)
         return user
 
-    async def update_user(self, user: User, update_data: UpdateUserDTO) -> User:
+    async def update_user(self, user: User, email: str, login: str) -> User:
         """Обновление данных пользователя.
 
         Args:
             user (User): Объект пользователя
-            update_data (dict): Данные для обновления
+            email (str): Новый email
+            login (str): Новый логин
 
         Raises:
             EmailSyntaxError: Если email некорректен
@@ -104,16 +106,18 @@ class UserService:
         """
         from bson import ObjectId
 
-        await self._validate_email(update_data.email)
+        await self._validate_email(email)
 
-        user = user.update(
-            email=update_data.email,
-            login=update_data.login,
+        updated_user: User = user.update(
+            email=email,
+            login=login,
         )
-        data = update_data.__dict__
+        data = asdict(updated_user)
         data.pop("_id", None)
 
-        await self._repo.update({"_id": ObjectId(user.id)}, {"$set": data})
+        await self._repo.update(
+            {"_id": ObjectId(updated_user.id)}, {"$set": data}
+        )
         return user
 
     async def delete_user(self, user_id: str) -> bool:
@@ -137,6 +141,6 @@ class UserService:
             email (str): Email для валидации
         """
         try:
-            validate_email(email)
+            validate_email(email, strict=False)
         except Exception:
             raise EmailSyntaxError

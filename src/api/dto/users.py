@@ -10,21 +10,19 @@ from src.domain.entities.user import User
 class UserDTO(DataclassDTO[User]):
     """DTO для определения пользователя."""
 
-    config = DTOConfig()
+    config = DTOConfig(underscore_fields_private=False)
 
 
 class CreateUserDTO(DataclassDTO[User]):
     """DTO для создания пользователя."""
 
-    config = DTOConfig(exclude={"updated_at", "created_at", "_id"})
+    config = DTOConfig(exclude={"updated_at", "created_at"})
 
 
-@dataclass
-class UpdateUserDTO:
+class UpdateUserDTO(DataclassDTO[User]):
     """DTO для обновления пользователя."""
 
-    email: str
-    login: str
+    config = DTOConfig(include={"email", "login"})
 
 
 @dataclass
