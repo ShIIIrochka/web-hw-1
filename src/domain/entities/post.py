@@ -4,15 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import Any
 from uuid import UUID
 
 from src.domain.entities.base_model import BaseModel
 from src.domain.entities.user import User
-
-
-if TYPE_CHECKING:
-    from src.domain.entities.category import Category
 
 
 @dataclass
@@ -22,7 +18,7 @@ class Post(BaseModel):
     author_id: str | UUID
     title: str
     content: str
-    categories: list["Category"] | None = None
+    categories: list[dict[str, Any]] | None = None
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
 

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from api.dto.categories import CreateCategoryDTO
-from domain.entities.category import Category
-from domain.repositories.category_repository import BaseCategoryRepository
+from src.domain.entities.category import Category
+from src.api.dto.categories import CreateCategoryDTO
+from src.domain.repositories.category_repository import BaseCategoryRepository
 
 
 class CategoryService:
@@ -16,7 +16,7 @@ class CategoryService:
         """
         self._repo = repository
 
-    async def create_category(self, data: CreateCategoryDTO) -> Category:
+    async def create_category(self, data: Category | CreateCategoryDTO) -> Category:
         """Создание категории.
 
         Args:
@@ -24,7 +24,18 @@ class CategoryService:
         Returns:
             Category: Созданная категория
         """
-        category = Category.create(name=data.name)
+        # accept either a Category entity or DTO. Read name safely.
+        if hasattr(data, "name") and data.name is not None:
+            name = data.name
+        elif hasattr(data, "as_builtins"):
+            name = data.as_builtins().get("name")
+        else:
+            name = None
+
+        if not name:
+            raise ValueError("Category name is required")
+
+        category = Category.create(name=name)
         await self._repo.add(category)
         return category
 
@@ -42,3 +53,17 @@ class CategoryService:
         """
         categories = await self._repo.get_many(cursor, limit)
         return categories
+
+    async def get_category_by_id(self, id: str) -> Category:
+        """Get a single category by id.
+
+        Raises:
+            ValueError: if category is not found
+
+        Returns:
+            Category
+        """
+        category = await self._repo.get_by_id(id)
+        if not category:
+            raise ValueError("Category not found")
+        return category

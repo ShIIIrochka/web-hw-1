@@ -6,10 +6,10 @@ from litestar.datastructures import State
 from litestar.exceptions import NotAuthorizedException
 from punq import Container
 
-from api.dto.categories import CategoryDTO, CreateCategoryDTO
-from application.services.category_service import CategoryService
-from domain.entities.category import Category
-from domain.entities.user import User
+from src.api.dto.categories import CategoryDTO, CreateCategoryDTO
+from src.application.services.category_service import CategoryService
+from src.domain.entities.category import Category
+from src.domain.entities.user import User
 
 
 class CategoryController(Controller):

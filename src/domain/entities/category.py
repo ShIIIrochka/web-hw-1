@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 
-from domain.entities.base_model import BaseModel
-from src.domain.entities.post import Post
+from src.domain.entities.base_model import BaseModel
 
 
 @dataclass
@@ -14,7 +14,7 @@ class Category(BaseModel):
     """Модель категории."""
 
     name: str
-    posts: list[Post] | None = None
+    posts: list[dict[str, Any]] | None = None
     created_at: datetime = datetime.now()
     updated_at: datetime = datetime.now()
 

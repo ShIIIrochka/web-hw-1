@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 
-from domain.entities.post import Post
+from src.domain.entities.post import Post
 
 
 class BasePostRepository(ABC):

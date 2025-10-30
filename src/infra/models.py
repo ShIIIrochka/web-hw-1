@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from dataclasses import asdict
 from datetime import datetime
 
 from tortoise import fields, models
@@ -13,7 +14,7 @@ class Category(models.Model):
     id = fields.UUIDField(pk=True)
     name = fields.CharField(max_length=255)
     posts: fields.ManyToManyRelation["Post"] = fields.ManyToManyField(
-        "models.PostModel", related_name="categories", through="post_categories"
+        "models.Post", related_name="categories", through="post_categories"
     )
     created_at = fields.DatetimeField(default=datetime.now)
     updated_at = fields.DatetimeField(default=datetime.now)
@@ -22,7 +23,7 @@ class Category(models.Model):
         posts = None
         if include_posts:
             await self.fetch_related("posts")
-            posts = [await Post.to_entity(post) for post in self.posts]
+            posts = [asdict(await post.to_entity()) for post in self.posts]
         return CategoryEntity(
             id=self.id,
             name=self.name,
@@ -40,7 +41,7 @@ class Post(models.Model):
     updated_at = fields.DatetimeField(default=datetime.now)
     categories: fields.ManyToManyRelation[Category]
     author: fields.ForeignKeyRelation["User"] = fields.ForeignKeyField(
-        "models.UserModel", related_name="posts"
+        "models.User", related_name="posts"
     )
     saved_by: fields.ManyToManyRelation["User"] = fields.ManyToManyField(
         "models.User", related_name="saved_posts"
@@ -53,7 +54,7 @@ class Post(models.Model):
         if include_categories:
             await self.fetch_related("categories")
             categories = [
-                await Category.to_entity(category)
+                asdict(await category.to_entity(category))
                 for category in self.categories
             ]
 
@@ -85,9 +86,9 @@ class User(models.Model):
 
         if include_posts:
             await self.fetch_related("posts", "saved_posts")
-            posts = [await Post.to_entity(post) for post in self.posts]
+            posts = [asdict(await post.to_entity()) for post in self.posts]
             saved_posts = [
-                await post.to_entity(post) for post in self.saved_posts
+                asdict(await post.to_entity()) for post in self.saved_posts
             ]
 
         return UserEntity(

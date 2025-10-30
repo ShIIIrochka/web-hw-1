@@ -100,3 +100,32 @@ class PostController(Controller):
             await post_service.delete_post(request.user, post)
         except PostPermissionError as e:
             raise PermissionDeniedException(detail=str(e))
+
+    @post(
+        "/{post_id:str}/categories/{category_id:str}/add",
+        response_dto=PostDTO,
+        security=[{"BearerAuth": []}],
+    )
+    async def add_category_to_post(
+        self,
+        post_id: str,
+        category_id: str,
+        container: Container,
+        request: Request[User, str, State],
+    ) -> Post:
+        """Add a category to a post (author only)."""
+        post_service: PostService = container.resolve(PostService)
+        try:
+            post = await post_service.get_post_by_id(post_id)
+        except PostNotFoundError:
+            raise NotFoundException(detail="Post not found")
+        try:
+            updated = await post_service.add_category_to_post(
+                request.user, post, category_id
+            )
+        except PostPermissionError as e:
+            raise PermissionDeniedException(detail=str(e))
+        except ValueError:
+            # category not found or other value errors
+            raise NotFoundException(detail="Category not found")
+        return updated

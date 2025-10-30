@@ -3,11 +3,11 @@
 from jam.aio import Jam
 from punq import Container
 
-from application.services.category_service import CategoryService
-from infra.gateways.database import PostgresGateway
-from infra.repositories.category_repository import CategoryRepository
-from infra.repositories.post_repository import PostRepository
-from infra.repositories.user_repository import UserRepository
+from src.application.services.category_service import CategoryService
+from src.infra.gateways.database import PostgresGateway
+from src.infra.repositories.category_repository import CategoryRepository
+from src.infra.repositories.post_repository import PostRepository
+from src.infra.repositories.user_repository import UserRepository
 from src.application.services.auth_service import AuthService
 from src.application.services.post_service import PostService
 from src.application.services.user_service import UserService
@@ -40,7 +40,7 @@ def container_builder() -> Container:
         DBGateway,
         instance=PostgresGateway(
             uri=container.resolve(Config).db_uri,
-            modules={"models": ["src.nfra.models"]},
+            modules={"models": ["src.infra.models"]},
         ),
     )
 
@@ -71,13 +71,6 @@ def container_builder() -> Container:
     )
 
     container.register(
-        PostService,
-        factory=lambda: PostService(
-            repository=container.resolve("PostRepo"),
-        ),
-    )
-
-    container.register(
         "CategoryRepo",
         factory=lambda: CategoryRepository(),
     )
@@ -88,4 +81,14 @@ def container_builder() -> Container:
             repository=container.resolve("CategoryRepo"),
         ),
     )
+
+    container.register(
+        PostService,
+        factory=lambda: PostService(
+            repository=container.resolve("PostRepo"),
+            # provide category service so PostService can fetch/attach categories
+            category_service=container.resolve(CategoryService),
+        ),
+    )
+
     return container

@@ -8,8 +8,7 @@ from litestar import Litestar
 from litestar.di import Provide
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.spec import Components, SecurityScheme
-
-from infra.gateways.interfaces import DBGateway
+from src.infra.gateways.interfaces import DBGateway
 from src.api.routers import routers
 from src.infra.container import container_builder
 from src.middlewares.auth_middleware import middlewares

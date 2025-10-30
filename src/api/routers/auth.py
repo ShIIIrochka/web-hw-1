@@ -10,8 +10,8 @@ from litestar.exceptions import (
 )
 from punq import Container
 
-from api.dto.users import LoginUserDTO
-from domain.exceptions.user import UserNotFoundError
+from src.api.dto.users import LoginUserDTO
+from src.domain.exceptions.user import UserNotFoundError
 from src.api.dto.tokens import JWTTokens
 from src.api.dto.users import CreateUserDTO
 from src.application.services.auth_service import AuthService

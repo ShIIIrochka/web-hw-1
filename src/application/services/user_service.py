@@ -3,7 +3,7 @@
 from email_validator import validate_email
 from litestar.dto import DTOData
 
-from domain.repositories.user_repository import BaseUserRepository
+from src.domain.repositories.user_repository import BaseUserRepository
 from src.domain.entities.user import User
 from src.domain.exceptions.user import EmailSyntaxError, UserNotFoundError
 

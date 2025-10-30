@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from litestar.dto import DTOConfig, DataclassDTO
 
-from domain.entities.category import Category
+from src.domain.entities.category import Category
 
 
 class CategoryDTO(DataclassDTO[Category]):

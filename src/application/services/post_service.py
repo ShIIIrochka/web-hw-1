@@ -6,18 +6,21 @@ from src.domain.entities.post import Post
 from src.domain.entities.user import User
 from src.domain.exceptions.post import PostNotFoundError, PostPermissionError
 from src.domain.repositories.post_repository import BasePostRepository
+from uuid import UUID
 
 
 class PostService:
     """Сервис для работы с постами."""
 
-    def __init__(self, repository: BasePostRepository) -> None:
+    def __init__(self, repository: BasePostRepository, category_service=None) -> None:
         """Конструктор.
 
         Args:
             repository (BaseRepository): Репозиторий для работы с БД
         """
         self._repo = repository
+        # optional CategoryService for fetching categories by id
+        self._category_service = category_service
 
     async def get_post_by_id(self, post_id: str) -> Post:
         """Получение поста по ID.
@@ -52,13 +55,52 @@ class PostService:
             Post: Созданный объект поста
         """
 
-        post = Post.create(
-            user,
-            data.as_builtins()["title"],
-            data.as_builtins()["content"],
-        )
+        built = data.as_builtins()
+        title = built.get("title")
+        content = built.get("content")
+        category_ids = built.get("category_ids")
+
+        post = Post.create(user, title, content)
+
+        # attach categories if provided and category service is available
+        if category_ids and self._category_service:
+            categories = []
+            for cid in category_ids:
+                try:
+                    cat = await self._category_service.get_category_by_id(cid)
+                except ValueError:
+                    # propagate as ValueError to caller to map to 404
+                    raise
+                categories.append(cat)
+            post.categories = categories
+
         await self._repo.add(post)
         return post
+
+    async def add_category_to_post(self, user: User, post: Post, category_id: str | UUID) -> Post:
+        """Add a category to an existing post. Only author can modify their post."""
+        if str(user.id) != str(post.author_id):
+            raise PostPermissionError("You do not have permission to modify this post")
+
+        if not self._category_service:
+            raise ValueError("Category service not available")
+
+        try:
+            # ensure category_id is a string when calling the category service
+            category = await self._category_service.get_category_by_id(str(category_id))
+        except ValueError:
+            raise
+
+        if not post.categories:
+            post.categories = [category]
+        else:
+            # avoid duplicates
+            if not any(str(c.id) == str(category.id) for c in post.categories):
+                post.categories.append(category)
+
+        # repository methods expect string ids
+        updated = await self._repo.update(str(post.id), post)
+        return updated
 
     async def update_post(
         self, user: User, post: Post, update_data: DTOData[Post]
