@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import annotations
+
 from litestar.dto import DTOConfig, DataclassDTO
 
 from domain.entities.category import Category

@@ -56,7 +56,6 @@ class PostService:
             user,
             data.as_builtins()["title"],
             data.as_builtins()["content"],
-            data.as_builtins()["categories"],
         )
         await self._repo.add(post)
         return post

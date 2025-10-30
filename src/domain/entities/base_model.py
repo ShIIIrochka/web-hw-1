@@ -1,17 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from dataclasses import dataclass, field
-
-from bson import ObjectId
+from uuid import UUID, uuid4
 
 
 @dataclass
 class BaseModel:
     """Базовая модель для работы."""
 
-    _id: ObjectId = field(default_factory=ObjectId, kw_only=True)
-
-    @property
-    def id(self) -> str:
-        """Возвращает ID в человеко читаемом виде."""
-        return str(self._id)
+    id: UUID = field(default_factory=uuid4, kw_only=True)

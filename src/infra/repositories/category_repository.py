@@ -1,76 +1,48 @@
 # -*- coding: utf-8 -*-
-
 from dataclasses import asdict
+from uuid import UUID
 
-from bson import ObjectId
-
-from domain.entities.category import Category
-from domain.repositories.category_repository import BaseCategoryRepository
+from src.domain.entities.category import Category
+from src.domain.repositories.category_repository import BaseCategoryRepository
+from src.infra.models import Category as CategoryModel
 
 
 class CategoryRepository(BaseCategoryRepository):
     """Репозиторий для работы с категориями."""
 
-    def __init__(self, gateway, collection_name: str) -> None:
+    def __init__(self, model: type[CategoryModel] = CategoryModel) -> None:
         """Конструктор.
 
         Args:
-            gateway (DBGateway): Гейт подключения к бд
-            collection_name (str): Имя коллекции
+            model (type[CategoryModel], optional): ORM модель
         """
-        self.__gw = gateway
-        self.collection_name = collection_name
-
-    async def _init_collection(self):
-        return await self.__gw.get_collection(self.collection_name)
+        self._model = model
 
     async def add(self, data: Category) -> str:
-        """Добавление документа в БД.
-
-        Args:
-            data (dict[str, Any]): Документ
-
-        Returns:
-            str: ID нового документа
-        """
-        collection = await self._init_collection()
-        result = await collection.insert_one(asdict(data))
-        return str(result.inserted_id)
+        """Добавление документа в БД."""
+        category_data = asdict(data)
+        category_data.pop("id", None)
+        category_data.pop("posts", None)
+        category = await self._model.create(**category_data)
+        return str(category.id)
 
     async def get_by_id(self, id: str) -> Category | None:
-        """Получение конкретного объекта из БД.
-
-        Args:
-            id (str): ID объекта
-
-        Returns:
-            dict[str, Any]: Результат поиска
-        """
-        collection = await self._init_collection()
-        try:
-            result = await collection.find_one({"_id": ObjectId(id)})
-        except Exception as e:
-            raise ValueError(e)
-        if result:
-            return Category.from_raw(result)
-        return None
+        """Получение конкретного объекта из БД."""
+        category = await self._model.get_or_none(id=UUID(id))
+        if category is None:
+            return None
+        return await category.to_entity(False)
 
     async def get_many(
         self, cursor: str | None, limit: int = 10
     ) -> list[Category]:
-        """Получение N объектов из БД.
-
-        Args:
-            cursor (str, optional): Курсор для пагинации. Defaults to None.
-            limit (int, optional): Лимит. Defaults to 10.
-
-        Returns:
-            list[dict[str, Any]]: Результаты поиска
-        """
-        collection = await self._init_collection()
-        query = {"_id": {"$gt": cursor}} if cursor else {}
-        cursor = collection.find(query).limit(limit)
-        results = []
-        for document in cursor:
-            results.append(document)
-        return [Category.from_raw(res) for res in results]
+        """Получение N объектов из БД."""
+        query = self._model.all().limit(limit)
+        if cursor:
+            query = query.filter(self._model.id > UUID(cursor))
+        categories = await query
+        result = []
+        for category in categories:
+            entity = await category.to_entity(False)
+            result.append(entity)
+        return result

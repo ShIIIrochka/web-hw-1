@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
-from bson import ObjectId
+
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+
 from litestar import Litestar
 from litestar.di import Provide
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.spec import Components, SecurityScheme
 
+from infra.gateways.interfaces import DBGateway
 from src.api.routers import routers
 from src.infra.container import container_builder
 from src.middlewares.auth_middleware import middlewares
@@ -25,15 +30,22 @@ openapi_config = OpenAPIConfig(
     ),
 )
 
+
+@asynccontextmanager
+async def lifespan(app: Litestar):
+    db_gateway = app.state.container.resolve(DBGateway)
+    await db_gateway.init()
+    yield
+    await db_gateway.close()
+
+
 app = Litestar(
     route_handlers=[routers],
     debug=True,
     dependencies={"container": Provide(container_builder)},
     middleware=middlewares,
     openapi_config=openapi_config,
-    type_encoders={
-        ObjectId: str,
-    },
+    lifespan=[lifespan],
 )
 
 app.state.container = container_builder()

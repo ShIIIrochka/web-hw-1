@@ -29,6 +29,6 @@ class JWTPayload:
             token_type (Literal["access", "refresh"]): Тип токена
         """
         return cls(
-            user_id=user.id,
+            user_id=str(user.id),
             token_type=token_type,
         )

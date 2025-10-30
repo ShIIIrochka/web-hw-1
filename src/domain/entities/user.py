@@ -4,9 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING
 
 from src.domain.entities.base_model import BaseModel
+
+
+if TYPE_CHECKING:
+    from src.domain.entities.post import Post
 
 
 @dataclass
@@ -16,7 +20,8 @@ class User(BaseModel):
     email: str
     login: str
     password: str
-    saved_posts: list[str] | None = None
+    posts: list["Post"] | None = None
+    saved_posts: list["Post"] | None = None
     created_at: datetime = datetime.now()
     updated_at: datetime = datetime.now()
 
@@ -58,23 +63,3 @@ class User(BaseModel):
         self.email = email
         self.updated_at = datetime.now()
         return self
-
-    @classmethod
-    def from_raw(cls, raw: dict[str, Any]) -> User:
-        """Собирает модель из raw, например при сборке из репозитория.
-
-        Args:
-            raw (dict[str, Any]): RAW в dict формате
-
-        Returns:
-            User: Собранная модель
-        """
-        user = cls(
-            email=raw["email"],
-            login=raw["login"],
-            password=raw["password"],
-            created_at=raw["created_at"],
-            updated_at=raw["updated_at"],
-        )
-        user._id = raw["_id"]
-        return user

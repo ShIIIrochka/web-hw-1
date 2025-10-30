@@ -4,6 +4,7 @@ from jam.aio import Jam
 from punq import Container
 
 from application.services.category_service import CategoryService
+from infra.gateways.database import PostgresGateway
 from infra.repositories.category_repository import CategoryRepository
 from infra.repositories.post_repository import PostRepository
 from infra.repositories.user_repository import UserRepository
@@ -11,7 +12,6 @@ from src.application.services.auth_service import AuthService
 from src.application.services.post_service import PostService
 from src.application.services.user_service import UserService
 from src.infra.config import Config
-from src.infra.gateways.database import MongoGateway
 from src.infra.gateways.interfaces import DBGateway
 from src.infra.providers.interfaces import AuthProvider
 from src.infra.providers.jwt import JWTProvider
@@ -38,9 +38,9 @@ def container_builder() -> Container:
 
     container.register(
         DBGateway,
-        instance=MongoGateway(
+        instance=PostgresGateway(
             uri=container.resolve(Config).db_uri,
-            db_name=container.resolve(Config).db_name,
+            modules={"models": ["src.nfra.models"]},
         ),
     )
 
@@ -55,10 +55,7 @@ def container_builder() -> Container:
 
     container.register(
         "UserRepo",
-        factory=lambda: UserRepository(
-            gateway=container.resolve(DBGateway),
-            collection_name="users",
-        ),
+        factory=lambda: UserRepository(),
     )
 
     container.register(
@@ -70,11 +67,7 @@ def container_builder() -> Container:
 
     container.register(
         "PostRepo",
-        factory=lambda: PostRepository(
-            gateway=container.resolve(DBGateway),
-            collection_name="posts",
-            categories_collection_name="categories",
-        ),
+        factory=lambda: PostRepository(),
     )
 
     container.register(
@@ -86,10 +79,7 @@ def container_builder() -> Container:
 
     container.register(
         "CategoryRepo",
-        factory=lambda: CategoryRepository(
-            gateway=container.resolve(DBGateway),
-            collection_name="categories",
-        ),
+        factory=lambda: CategoryRepository(),
     )
 
     container.register(

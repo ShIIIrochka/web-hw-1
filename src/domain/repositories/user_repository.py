@@ -13,10 +13,10 @@ class BaseUserRepository(ABC):
         """Добавление нового пользователя.
 
         Args:
-            data (dict): Данные пользователя.
+            data (dict): Данные пользователя
 
         Returns:
-            str: ID нового пользователя.
+            str: ID нового пользователя
         """
         raise NotImplementedError
 
@@ -25,21 +25,46 @@ class BaseUserRepository(ABC):
         """Получение пользователя по ID.
 
         Args:
-            id (str): ID пользователя.
+            id (str): ID пользователя
 
         Returns:
-            dict | None: Данные пользователя или None, если не найден.
+            dict | None: Данные пользователя или None, если не найден
         """
         raise NotImplementedError
 
     @abstractmethod
     async def get_one(self, query: dict) -> User | None:
+        """Получение одного пользователя по запросу.
+
+        Args:
+            query (dict): Запрос для поиска пользователя
+
+        Returns:
+            dict | None: Данные пользователя или None, если не найден
+        """
         raise NotImplementedError
 
     @abstractmethod
     async def update(self, id: str, data: User) -> User:
+        """Обновление пользователя.
+
+        Args:
+            id (str): ID пользователя
+            data (User): Данные для обновления
+
+        Returns:
+            User: Обновленный пользователь
+        """
         raise NotImplementedError
 
     @abstractmethod
     async def delete(self, id: str) -> bool:
+        """Удаление пользователя по ID.
+
+        Args:
+            id (str): ID пользователя
+
+        Returns:
+            bool: Статус удаления
+        """
         raise NotImplementedError

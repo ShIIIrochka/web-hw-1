@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from domain.entities.base_model import BaseModel
+from src.domain.entities.post import Post
 
 
 @dataclass
@@ -12,21 +14,9 @@ class Category(BaseModel):
     """Модель категории."""
 
     name: str
-
-    @classmethod
-    def from_raw(cls, raw: dict) -> Category:
-        """Собирает модель из raw, например при сборке из репозитория.
-
-        Args:
-            raw (dict): RAW в dict формате
-        Returns:
-            Category: Собранная модель
-        """
-        category = cls(
-            name=raw["name"],
-        )
-        category._id = str(raw["_id"])
-        return category
+    posts: list[Post] | None = None
+    created_at: datetime = datetime.now()
+    updated_at: datetime = datetime.now()
 
     @classmethod
     def create(cls, name: str) -> Category:
@@ -40,5 +30,7 @@ class Category(BaseModel):
         """
         category = cls(
             name=name,
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
         )
         return category

@@ -1,36 +1,34 @@
 # -*- coding: utf-8 -*-
 
-from pymongo import AsyncMongoClient
+from tortoise import Tortoise
 
 from .interfaces import DBGateway
 
 
-class MongoGateway(DBGateway):
+class PostgresGateway(DBGateway):
     """Гейтвей для подключения к MongoDB."""
 
-    def __init__(self, uri: str, db_name: str) -> None:
+    def __init__(
+        self,
+        uri: str,
+        modules: dict[str, list[str]],
+    ) -> None:
         """Конструктор.
 
         Args:
             uri (str): URI подключение к MongoDB
-            db_name (str): Имя базы данных
+            modules (dict[str, list[str]]): Модули с моделями
 
         Returns:
             None
         """
-        self.client: AsyncMongoClient = AsyncMongoClient(uri)
-        self.db = self.client[db_name]
+        self.db_uri = uri
+        self.modules = modules
 
-    @property
-    async def get_connection(self):
-        """Создание асинхронного коннекшена."""
-        await self.client.aconnect()
-        return None
+    async def init(self):
+        await Tortoise.init(db_url=self.db_uri, modules=self.modules)
+        await Tortoise.generate_schemas()
 
-    async def get_collection(self, collection_name: str):
-        """Получаем/создаем коллекцию.
-
-        Args:
-            collection_name (str): Имя коллекции
-        """
-        return self.db[collection_name]
+    @staticmethod
+    async def close():
+        await Tortoise.close_connections()

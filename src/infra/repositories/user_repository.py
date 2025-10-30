@@ -1,108 +1,62 @@
 # -*- coding: utf-8 -*-
+
 from dataclasses import asdict
+from uuid import UUID
 
-from bson import ObjectId
-from bson.errors import InvalidId
+from tortoise.exceptions import DoesNotExist
 
-from domain.entities.post import Post
-from domain.entities.user import User
-from domain.repositories.user_repository import BaseUserRepository
-from infra.gateways.interfaces import DBGateway
+from src.domain.entities.user import User
+from src.domain.repositories.user_repository import BaseUserRepository
+from src.infra.models import User as UserModel
 
 
 class UserRepository(BaseUserRepository):
     """Реализация репозитория для работы с пользователями."""
 
-    def __init__(self, gateway: DBGateway, collection_name: str) -> None:
+    def __init__(self, model: type[UserModel] = UserModel) -> None:
         """Конструктор.
 
         Args:
-            gateway (DBGateway): Гейт подключения к бд
-            collection_name (str): Имя коллекции
+            model (str): ORM модель
         """
-        self.__gw = gateway
-        self.collection_name = collection_name
-
-    async def _init_collection(self):
-        return await self.__gw.get_collection(self.collection_name)
+        self._model = model
 
     async def add(self, data: User) -> str:
-        """Добавление нового пользователя.
-
-        Args:
-            data (User): Данные пользователя.
-
-        Returns:
-            str: ID нового пользователя.
-        """
-        collection = await self._init_collection()
-        user_dict = asdict(data)
-        result = await collection.insert_one(user_dict)
-        return str(result.inserted_id)
-
-    async def get_by_id(self, id: str) -> User | None:
-        """Получение пользователя по ID.
-
-        Args:
-            id (str): ID пользователя.
-
-        Returns:
-            User | None: Данные пользователя или None, если не найден.
-        """
-        collection = await self._init_collection()
-        try:
-            result = await collection.find_one({"_id": ObjectId(id)})
-        except Exception:
-            raise ValueError
-        if result:
-            return User.from_raw(result)
-        return None
-
-    async def get_one(self, query: dict) -> Post | None:
-        """Получение одного пользователя по запросу.
-
-        Args:
-            query (dict): Запрос для поиска пользователя.
-
-        Returns:
-            dict | None: Данные пользователя или None, если не найден.
-        """
-        collection = await self._init_collection()
-        result = await collection.find_one(query)
-        if result:
-            Post.from_raw(result)
-        return None
-
-    async def update(self, user_id: str, data: User) -> User:
-        """Обновление пользователя.
-
-        Args:
-            user_id (str): ID пользователя.
-            data (User): Данные для обновления.
-
-        Returns:
-            User: Обновленный пользователь.
-        """
-        collection = await self._init_collection()
+        """Добавление нового пользователя."""
         user_dict = asdict(data)
         user_dict.pop("id", None)
+        user_dict.pop("posts", None)
+        user_dict.pop("saved_posts", None)
+        result = await self._model.create(**user_dict)
+        return str(result.id)
+
+    async def get_by_id(self, id: str) -> User | None:
+        """Получение пользователя по ID."""
         try:
-            result = await collection.update_one(
-                {"_id": ObjectId(user_id)}, {"$set": user_dict}
-            )
-        except InvalidId:
-            raise ValueError
-        return User.from_raw(result)
+            user = await self._model.get(id=UUID(id))
+            return await user.to_entity(include_posts=True)
+        except DoesNotExist:
+            return None
+
+    async def get_one(self, query: dict) -> User | None:
+        """Получение одного пользователя по запросу."""
+        user = await self._model.filter(**query).first()
+        if not user:
+            return None
+        return await user.to_entity(include_posts=True)
+
+    async def update(self, user_id: str, data: User) -> User:
+        """Обновление пользователя."""
+        update_data = asdict(data)
+        update_data.pop("id", None)
+        update_data.pop("posts", None)
+        update_data.pop("saved_posts", None)
+
+        await self._model.filter(id=UUID(user_id)).update(**update_data)
+        updated = await self._model.get_or_none(id=user_id)
+        return await updated.to_entity(include_posts=True) if updated else data
 
     async def delete(self, id: str) -> bool:
-        """Удаление пользователя по ID.
-
-        Args:
-            id (str): ID пользователя.
-        """
-        collection = await self._init_collection()
-        try:
-            await collection.delete_one({"_id": ObjectId(id)})
-            return True
-        except InvalidId:
-            raise ValueError
+        """Удаление пользователя по ID."""
+        deleted_count = await self._model.filter(id=UUID(id)).delete()
+        return deleted_count > 0

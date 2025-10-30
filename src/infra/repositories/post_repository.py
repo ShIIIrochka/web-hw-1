@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from dataclasses import asdict
-from typing import Any, Mapping, Sequence
+from uuid import UUID
 
-from bson import DBRef, ObjectId
-from pymongo.asynchronous.collection import AsyncCollection
-
-from domain.entities.post import Post
-from domain.repositories.post_repository import BasePostRepository
-from infra.gateways.interfaces import DBGateway
+from src.domain.entities.post import Post
+from src.domain.repositories.post_repository import BasePostRepository
+from src.infra.models import Post as PostModel
 
 
 class PostRepository(BasePostRepository):
@@ -16,155 +13,70 @@ class PostRepository(BasePostRepository):
 
     def __init__(
         self,
-        gateway: DBGateway,
-        collection_name: str,
-        categories_collection_name: str,
+        model: type[PostModel] = PostModel,
     ) -> None:
         """Конструктор.
 
         Args:
-            gateway (DBGateway): Гейт подключения к бд
-            collection_name (str): Имя коллекции
-            categories_collection_name (str): Имя коллекции категорий
+            model (type[PostModel]): Модель поста
         """
-        self.__gw = gateway
-        self.collection_name = collection_name
-        self.categories_collection_name = categories_collection_name
-
-    async def _init_collection(self) -> AsyncCollection:
-        return await self.__gw.get_collection(self.collection_name)
+        self._model = model
 
     async def add(self, data: Post) -> str:
-        """Добавление документа в БД.
+        """Добавление поста в БД."""
+        post_data = asdict(data)
+        post_data.pop("id", None)
+        categories = post_data.pop("categories")
 
-        Args:
-            data (dict[str, Any]): Документ
+        new_post = await self._model.create(**post_data)
 
-        Returns:
-            str: ID нового документа
-        """
-        collection = await self._init_collection()
-        dict_data = asdict(data)
-        categories = dict_data["categories"]
         if categories:
-            linked_categories = []
-            for cat in categories:
-                linked_categories.append(
-                    DBRef(self.categories_collection_name, ObjectId(cat))
-                )
-            dict_data["categories"] = linked_categories
-        result = await collection.insert_one(dict_data)
-        return str(result.inserted_id)
+            category_ids = [cat.id for cat in categories]
+            if category_ids:
+                await new_post.categories.add(*category_ids)
+
+        return str(new_post.id)
 
     async def get_by_id(self, id: str) -> Post | None:
-        """Получение конкретного объекта из БД.
-
-        Args:
-            id (str): ID объекта
-
-        Returns:
-            dict[str, Any]: Результат поиска
-        """
-        collection = await self._init_collection()
-        try:
-            query = {"_id": ObjectId(id)}
-        except Exception:
-            raise ValueError
-        pipeline: Sequence[Mapping[str, Any]] = [
-            {"$match": query},
-            {
-                "$lookup": {
-                    "from": self.categories_collection_name,
-                    "localField": "categories.$id",
-                    "foreignField": "_id",
-                    "as": "categories",
-                }
-            },
-        ]
-
-        result_cursor = await collection.aggregate(pipeline)
-        result = await result_cursor.to_list(length=1)
-        if result:
-            return Post.from_raw(result[0])
-        return None
+        """Получение конкретного поста из БД."""
+        post = await self._model.get_or_none(id=UUID(id))
+        if not post:
+            return None
+        return await post.to_entity(include_categories=True)
 
     async def get_many(
-        self, query: dict[str, Any], limit: int = 10
-    ) -> list[dict[str, Any]]:
-        """Получение N объектов из БД.
-
-        Args:
-            query (dit[str, Any]): Поисковый запрос
-            limit (int): Кол-во объектов
-
-        Returns:
-            list[dict[str, Any]]: Результат поиска
-        """
-        collection = await self._init_collection()
-        pipeline: Sequence[Mapping[str, Any]] = [
-            {"$match": query},
-            {
-                "$lookup": {
-                    "from": self.categories_collection_name,
-                    "localField": "categories.$id",
-                    "foreignField": "_id",
-                    "as": "categories",
-                }
-            },
-            {"$limit": limit},
-        ]
-
-        result_cursor = await collection.aggregate(pipeline)
-        result = await result_cursor.to_list(length=limit)
+        self, cursor: str | None = None, limit: int = 10
+    ) -> list[Post]:
+        """Получение N объектов из БД."""
+        query = self._model.all().order_by("created_at")
+        if cursor:
+            query = query.filter(self._model.id > UUID(cursor))
+        posts = await query.limit(limit)
+        result = []
+        for post in posts:
+            result.append(await post.to_entity(include_categories=True))
         return result
 
     async def update(self, id: str, update_data: Post) -> Post:
-        """Обновление документа.
+        """Обновление поста."""
+        update_dict = asdict(update_data)
+        update_dict.pop("id", None)
+        categories = update_dict.pop("categories")
 
-        Args:
-            id (str): ID объекта
-            update_data (dict[str, Any]): Данные для обновления
+        await self._model.filter(id=id).update(**update_dict)
 
-        Returns:
-            dict[str, Any]: Обновленный документ
-        """
-        collection = await self._init_collection()
-        data = asdict(update_data)
-        data.pop("_id", None)
+        post = await self._model.get_or_none(id=UUID(id))
 
-        try:
-            query = {"_id": ObjectId(id)}
-        except Exception:
-            raise ValueError
-
-        categories = data.get("categories")
         if categories:
-            linked_categories = []
-            for cat in categories:
-                linked_categories.append(
-                    {"$ref": self.categories_collection_name, "$id": cat}
-                )
-            data["categories"] = linked_categories
-        result = await collection.find_one_and_update(
-            filter=query, update={"$set": data}
-        )
-        return Post.from_raw(result)
+            await post.fetch_related("categories")
+            await post.categories.clear()
+            category_ids = [cat.id for cat in categories]
+            if category_ids:
+                await post.categories.add(*category_ids)
+
+        return await post.to_entity(include_categories=True)
 
     async def delete(self, id: str) -> bool:
-        """Удаление объекта.
-
-        Args:
-            id (str): ID объекта
-
-        Returns:
-            bool: Результат операции
-
-        Raises:
-            ValueError: При неудачной операции
-        """
-        collection = await self._init_collection()
-        try:
-            await collection.find_one_and_delete({"_id": ObjectId(id)})
-        except Exception as e:
-            raise ValueError(e)
-        return True
+        """Удаление объекта."""
+        deleted_count = await self._model.filter(id=UUID(id)).delete()
+        return deleted_count > 0
