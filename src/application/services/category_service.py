@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from uuid import UUID
 
+from src.domain.exceptions.category import CategoryNotFoundError
 from src.domain.entities.category import Category
 from src.domain.repositories.category_repository import BaseCategoryRepository
 
@@ -55,5 +56,5 @@ class CategoryService:
         """
         category = await self._repo.get_by_id(id)
         if not category:
-            raise ValueError("Category not found")
+            raise CategoryNotFoundError
         return category
