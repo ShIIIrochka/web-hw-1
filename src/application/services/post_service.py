@@ -1,28 +1,35 @@
 # -*- coding: utf-8 -*-
 
+from uuid import UUID
+
 from litestar.dto import DTOData
 
 from src.domain.entities.post import Post
 from src.domain.entities.user import User
+from src.domain.exceptions.category import CategoryNotFoundError
 from src.domain.exceptions.post import PostNotFoundError, PostPermissionError
+from src.domain.repositories.category_repository import BaseCategoryRepository
 from src.domain.repositories.post_repository import BasePostRepository
-from uuid import UUID
 
 
 class PostService:
     """Сервис для работы с постами."""
 
-    def __init__(self, repository: BasePostRepository, category_service=None) -> None:
+    def __init__(
+        self,
+        repository: BasePostRepository,
+        category_repository: BaseCategoryRepository,
+    ) -> None:
         """Конструктор.
 
         Args:
-            repository (BaseRepository): Репозиторий для работы с БД
+            repository (BaseRepository): Репозиторий для работы с постами
+            category_repository (BaseCategoryRepository): Репозиторий для работы с категориями
         """
         self._repo = repository
-        # optional CategoryService for fetching categories by id
-        self._category_service = category_service
+        self._category_repo = category_repository
 
-    async def get_post_by_id(self, post_id: str) -> Post:
+    async def get_post_by_id(self, post_id: UUID) -> Post:
         """Получение поста по ID.
 
         Args:
@@ -58,49 +65,16 @@ class PostService:
         built = data.as_builtins()
         title = built.get("title")
         content = built.get("content")
-        category_ids = built.get("category_ids")
+        category_ids = built.get("categories")
 
-        post = Post.create(user, title, content)
-
-        # attach categories if provided and category service is available
-        if category_ids and self._category_service:
-            categories = []
-            for cid in category_ids:
-                try:
-                    cat = await self._category_service.get_category_by_id(cid)
-                except ValueError:
-                    # propagate as ValueError to caller to map to 404
-                    raise
-                categories.append(cat)
-            post.categories = categories
-
-        await self._repo.add(post)
-        return post
-
-    async def add_category_to_post(self, user: User, post: Post, category_id: str | UUID) -> Post:
-        """Add a category to an existing post. Only author can modify their post."""
-        if str(user.id) != str(post.author_id):
-            raise PostPermissionError("You do not have permission to modify this post")
-
-        if not self._category_service:
-            raise ValueError("Category service not available")
+        post = Post.create(user.id, title, content, category_ids)
 
         try:
-            # ensure category_id is a string when calling the category service
-            category = await self._category_service.get_category_by_id(str(category_id))
+            await self._repo.add(post)
         except ValueError:
-            raise
+            raise CategoryNotFoundError
 
-        if not post.categories:
-            post.categories = [category]
-        else:
-            # avoid duplicates
-            if not any(str(c.id) == str(category.id) for c in post.categories):
-                post.categories.append(category)
-
-        # repository methods expect string ids
-        updated = await self._repo.update(str(post.id), post)
-        return updated
+        return post
 
     async def update_post(
         self, user: User, post: Post, update_data: DTOData[Post]
@@ -118,13 +92,13 @@ class PostService:
         Returns:
             Post: Обновленный объект поста
         """
-
         if user.id != post.author_id:
             raise PostPermissionError
 
         updated_post = post.update(
             title=update_data.as_builtins()["title"],
             content=update_data.as_builtins()["content"],
+            categories=update_data.as_builtins().get("category_ids"),
         )
         await self._repo.update(post.id, updated_post)
         return updated_post
@@ -141,8 +115,6 @@ class PostService:
         """
 
         if user.id != post.author_id:
-            raise PermissionError(
-                "You do not have permission to delete this post"
-            )
+            raise PostPermissionError
 
         return await self._repo.delete(post.id)
