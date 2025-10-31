@@ -8,6 +8,7 @@ from litestar.exceptions import (
     NotFoundException,
     ValidationException,
 )
+from litestar.status_codes import HTTP_200_OK
 from punq import Container
 
 from src.api.dto.tokens import JWTTokens
@@ -61,6 +62,7 @@ class AuthController(Controller):
 
     @post(
         path="/refresh",
+        status_code=HTTP_200_OK,
         return_dto=JWTTokens,
     )
     async def refresh(
@@ -91,6 +93,7 @@ class AuthController(Controller):
 
     @post(
         path="/login",
+        status_code=HTTP_200_OK,
         dto=LoginUserDTO,
         return_dto=JWTTokens,
     )
