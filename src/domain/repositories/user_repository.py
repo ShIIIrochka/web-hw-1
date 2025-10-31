@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from abc import ABC, abstractmethod
+from uuid import UUID
 
 from src.domain.entities.user import User
 
@@ -45,11 +46,11 @@ class BaseUserRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def update(self, id: str, data: User) -> User:
+    async def update(self, id: UUID, data: User) -> User:
         """Обновление пользователя.
 
         Args:
-            id (str): ID пользователя
+            id (UUID): ID пользователя
             data (User): Данные для обновления
 
         Returns:
@@ -58,11 +59,11 @@ class BaseUserRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def delete(self, id: str) -> bool:
+    async def delete(self, id: UUID) -> bool:
         """Удаление пользователя по ID.
 
         Args:
-            id (str): ID пользователя
+            id (UUID): ID пользователя
 
         Returns:
             bool: Статус удаления

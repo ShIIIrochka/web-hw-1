@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from abc import ABC, abstractmethod
+from uuid import UUID
 
 from src.domain.entities.post import Post
 
@@ -21,16 +22,16 @@ class BasePostRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_by_id(self, id: str) -> Post | None:
+    async def get_by_id(self, id: UUID) -> Post | None:
         """Получение конкретного объекта из БД."""
         raise NotImplementedError
 
     @abstractmethod
-    async def update(self, id: str, data: Post) -> Post:
+    async def update(self, id: UUID, data: Post) -> Post:
         """Обновление документа в БД."""
         raise NotImplementedError
 
     @abstractmethod
-    async def delete(self, id: str) -> bool:
+    async def delete(self, id: UUID) -> bool:
         """Удаление документа из БД."""
         raise NotImplementedError
