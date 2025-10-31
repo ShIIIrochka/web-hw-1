@@ -11,13 +11,13 @@ from src.domain.entities.post import Post
 class PostDTO(DataclassDTO[Post]):
     """DTO для поста."""
 
-    config = DTOConfig(underscore_fields_private=True)
+    config = DTOConfig()
 
 
 class CreatePostDTO(DataclassDTO[Post]):
     """DTO для создания поста."""
 
-    config = DTOConfig(include={"title", "content", "category_ids"})
+    config = DTOConfig(include={"title", "content", "categories"})
 
 
 class UpdatePostDTO(DataclassDTO[Post]):
