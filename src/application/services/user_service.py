@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+from uuid import UUID
 
 from email_validator import validate_email
 from litestar.dto import DTOData
 
-from src.domain.repositories.user_repository import BaseUserRepository
 from src.domain.entities.user import User
 from src.domain.exceptions.user import EmailSyntaxError, UserNotFoundError
+from src.domain.repositories.user_repository import BaseUserRepository
 
 
 class UserService:
@@ -116,11 +117,11 @@ class UserService:
             raise UserNotFoundError
         return user
 
-    async def delete_user(self, user_id: str) -> bool:
+    async def delete_user(self, user_id: UUID) -> bool:
         """Удаление пользователя.
 
         Args:
-            user_id (str): ID пользователя
+            user_id (UUID): ID пользователя
 
         Returns:
             bool: Статус удаления
