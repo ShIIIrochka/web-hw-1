@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
 
 from src.domain.entities.base_model import BaseModel
 
@@ -16,8 +15,6 @@ class User(BaseModel):
     email: str
     login: str
     password: str
-    posts: list[dict[str, Any]] | None = None
-    saved_posts: list[dict[str, Any]] | None = None
     created_at: datetime = datetime.now()
     updated_at: datetime = datetime.now()
 
