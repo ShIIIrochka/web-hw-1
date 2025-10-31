@@ -151,7 +151,6 @@ class UserService:
         """
         await self._repo.unsave_post(user_id, post_id)
 
-
     async def get_saved_posts(self, user_id: UUID) -> list[Post]:
         """Получение сохранённых постов пользователя.
 

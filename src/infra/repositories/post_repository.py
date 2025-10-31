@@ -54,10 +54,10 @@ class PostRepository(BasePostRepository):
         self, query: dict, cursor: UUID | None = None, limit: int = 10
     ) -> list[Post]:
         """Получение N объектов из БД."""
-        query = self._model.filter(**query).order_by("created_at")
+        result = self._model.filter(**query).order_by("created_at")
         if cursor:
-            query = query.filter(id__gt=cursor)
-        posts = await query.limit(limit)
+            result = result.filter(id__gt=cursor)
+        posts = await result.limit(limit)
         return [await post.to_entity() for post in posts]
 
     async def update(self, id: UUID, update_data: Post) -> Post:

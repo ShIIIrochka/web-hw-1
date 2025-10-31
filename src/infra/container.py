@@ -86,7 +86,6 @@ def container_builder() -> Container:
         PostService,
         factory=lambda: PostService(
             repository=container.resolve("PostRepo"),
-            category_repository=container.resolve("CategoryRepo"),
         ),
     )
 

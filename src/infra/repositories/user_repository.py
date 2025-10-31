@@ -8,14 +8,18 @@ from tortoise.exceptions import DoesNotExist
 from src.domain.entities.post import Post
 from src.domain.entities.user import User
 from src.domain.repositories.user_repository import BaseUserRepository
-from src.infra.models import User as UserModel
 from src.infra.models import Post as PostModel
+from src.infra.models import User as UserModel
 
 
 class UserRepository(BaseUserRepository):
     """Реализация репозитория для работы с пользователями."""
 
-    def __init__(self, model: type[UserModel] = UserModel, post_model: type[PostModel] = PostModel) -> None:
+    def __init__(
+        self,
+        model: type[UserModel] = UserModel,
+        post_model: type[PostModel] = PostModel,
+    ) -> None:
         """Конструктор.
 
         Args:
@@ -71,7 +75,6 @@ class UserRepository(BaseUserRepository):
         user = await self._model.get(id=user_id)
         post = await self._post_model.get(id=post_id)
         await user.saved_posts.remove(post)
-
 
     async def get_saved_posts(self, user_id: UUID) -> list[Post]:
         """Получение сохранённых постов пользователя.

@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from litestar import Controller, Request, get, post, put, delete
+from litestar import Controller, Request, delete, get, post, put
 from litestar.datastructures import State
 from litestar.dto import DTOData
 from litestar.exceptions import ValidationException
@@ -23,7 +23,7 @@ class UserController(Controller):
     path = "/users"
     tags = ["Users"]
     guards = [auth_guard]
-    security = [{"BearerAuth": []}],
+    security: list[dict[str, list]] = [{"BearerAuth": []}]
 
     @get(
         path="/me",
@@ -49,11 +49,7 @@ class UserController(Controller):
         user = await user_service.get_user_by_id(str(user_id))
         return user
 
-    @get(
-        path="/posts/saved",
-        return_dto=PostDTO,
-        status_code=HTTP_200_OK
-    )
+    @get(path="/posts/saved", return_dto=PostDTO, status_code=HTTP_200_OK)
     async def get_saved_posts(
         self,
         request: Request[User, str, State],

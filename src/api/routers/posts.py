@@ -9,7 +9,7 @@ from litestar.exceptions import (
     NotFoundException,
     PermissionDeniedException,
 )
-from litestar.status_codes import HTTP_204_NO_CONTENT, HTTP_200_OK
+from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from punq import Container
 
 from src.api.dto.posts import CreatePostDTO, PostDTO, UpdatePostDTO
@@ -25,7 +25,7 @@ class PostController(Controller):
     path = "/posts"
     tags = ["Posts"]
     return_dto = PostDTO
-    security = [{"BearerAuth": []}],
+    security: list[dict[str, list]] = [{"BearerAuth": []}]
     guards = [auth_guard]
 
     @get("/{post_id:uuid}", status_code=HTTP_200_OK)

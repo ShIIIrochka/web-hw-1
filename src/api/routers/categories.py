@@ -10,11 +10,11 @@ from litestar.status_codes import HTTP_200_OK
 from punq import Container
 
 from api.guards.auth import auth_guard
-from src.domain.exceptions.category import CategoryNotFoundError
 from src.api.dto.categories import CategoryDTO, CreateCategoryDTO
 from src.application.services.category_service import CategoryService
 from src.domain.entities.category import Category
 from src.domain.entities.user import User
+from src.domain.exceptions.category import CategoryNotFoundError
 
 
 class CategoryController(Controller):
@@ -23,7 +23,7 @@ class CategoryController(Controller):
     path = "/categories"
     tags = ["Categories"]
     guards = [auth_guard]
-    security = [{"BearerAuth": []}],
+    security: list[dict[str, list]] = [{"BearerAuth": []}]
     return_dto = CategoryDTO
 
     @post(
