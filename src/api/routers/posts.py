@@ -9,7 +9,7 @@ from litestar.exceptions import (
     NotFoundException,
     PermissionDeniedException,
 )
-from litestar.status_codes import HTTP_204_NO_CONTENT
+from litestar.status_codes import HTTP_204_NO_CONTENT, HTTP_200_OK
 from punq import Container
 
 from src.api.dto.posts import CreatePostDTO, PostDTO, UpdatePostDTO
@@ -25,9 +25,10 @@ class PostController(Controller):
     path = "/posts"
     tags = ["Posts"]
     return_dto = PostDTO
+    security = [{"BearerAuth": []}],
     guards = [auth_guard]
 
-    @get("/{post_id:uuid}")
+    @get("/{post_id:uuid}", status_code=HTTP_200_OK)
     async def get_post(
         self,
         post_id: UUID,
@@ -43,7 +44,6 @@ class PostController(Controller):
     @post(
         "/create",
         dto=CreatePostDTO,
-        security=[{"BearerAuth": []}],
     )
     async def create_post(
         self,
@@ -61,8 +61,8 @@ class PostController(Controller):
 
     @put(
         "/{post_id:uuid}/update",
+        status_code=HTTP_200_OK,
         dto=UpdatePostDTO,
-        security=[{"BearerAuth": []}],
     )
     async def update_post(
         self,
@@ -85,7 +85,6 @@ class PostController(Controller):
     @delete(
         "/{post_id:uuid}/delete",
         status_code=HTTP_204_NO_CONTENT,
-        security=[{"BearerAuth": []}],
     )
     async def delete_post(
         self,
@@ -103,3 +102,17 @@ class PostController(Controller):
             await post_service.delete_post(request.user, post)
         except PostPermissionError:
             raise PermissionDeniedException
+
+    @get(
+        "/user/{author_id:uuid}",
+        status_code=HTTP_200_OK,
+    )
+    async def get_posts_by_author(
+        self,
+        author_id: UUID,
+        container: Container,
+    ) -> list[Post]:
+        """Получение постов пользователя по его ID."""
+        post_service: PostService = container.resolve(PostService)
+        posts = await post_service.get_posts_by_author(author_id)
+        return posts
