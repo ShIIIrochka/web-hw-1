@@ -40,6 +40,7 @@ class Post(models.Model):
     saved_by: fields.ManyToManyRelation["User"] = fields.ManyToManyField(
         "models.User", related_name="saved_posts"
     )
+    comments: fields.ReverseRelation["Comment"]
 
     async def to_entity(self) -> PostEntity:
         """Перевод из ORM в Entity."""
@@ -55,6 +56,16 @@ class Post(models.Model):
         )
 
 
+class Comment(models.Model):
+    id = fields.UUIDField(pk=True)
+    content = fields.TextField()
+    created_at = fields.DatetimeField(default=datetime.now)
+    updated_at = fields.DatetimeField(default=datetime.now)
+    post: fields.ForeignKeyRelation[Post] = fields.ForeignKeyField(
+        "models.Post", related_name="comments"
+    )
+
+
 class User(models.Model):
     id = fields.UUIDField(pk=True)
     email = fields.CharField(max_length=255, unique=True)
@@ -64,6 +75,9 @@ class User(models.Model):
     updated_at = fields.DatetimeField(default=datetime.now)
     posts: fields.ReverseRelation["Post"]
     saved_posts: fields.ManyToManyRelation[Post]
+    followers: fields.ManyToManyRelation["User"] = fields.ManyToManyField(
+        "models.User", related_name="following", through="user_followers"
+    )
 
     async def to_entity(self) -> UserEntity:
         """Перевод из ORM в Entity."""
