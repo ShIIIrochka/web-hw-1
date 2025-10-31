@@ -51,17 +51,14 @@ class PostRepository(BasePostRepository):
         return await post.to_entity()
 
     async def get_many(
-        self, cursor: UUID | None = None, limit: int = 10
+        self, query: dict, cursor: UUID | None = None, limit: int = 10
     ) -> list[Post]:
         """Получение N объектов из БД."""
-        query = self._model.all().order_by("created_at")
+        query = self._model.filter(**query).order_by("created_at")
         if cursor:
             query = query.filter(id__gt=cursor)
         posts = await query.limit(limit)
-        result = []
-        for post in posts:
-            result.append(await post.to_entity())
-        return result
+        return [await post.to_entity() for post in posts]
 
     async def update(self, id: UUID, update_data: Post) -> Post:
         """Обновление поста."""

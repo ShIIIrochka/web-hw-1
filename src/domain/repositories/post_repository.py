@@ -35,3 +35,10 @@ class BasePostRepository(ABC):
     async def delete(self, id: UUID) -> bool:
         """Удаление документа из БД."""
         raise NotImplementedError
+
+    @abstractmethod
+    async def get_many(
+        self, query: dict, cursor: UUID | None = None, limit: int = 10
+    ) -> list[Post]:
+        """Получение N объектов из БД."""
+        raise NotImplementedError
