@@ -11,13 +11,13 @@ from src.domain.entities.user import User
 class UserDTO(DataclassDTO[User]):
     """DTO для определения пользователя."""
 
-    config = DTOConfig(underscore_fields_private=False)
+    config = DTOConfig()
 
 
 class CreateUserDTO(DataclassDTO[User]):
     """DTO для создания пользователя."""
 
-    config = DTOConfig(exclude={"updated_at", "created_at"})
+    config = DTOConfig(exclude={"updated_at", "created_at", "id"})
 
 
 class UpdateUserDTO(DataclassDTO[User]):
