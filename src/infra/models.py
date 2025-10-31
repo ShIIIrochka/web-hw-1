@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from dataclasses import asdict
 from datetime import datetime
 
 from tortoise import fields, models
@@ -19,17 +18,12 @@ class Category(models.Model):
     created_at = fields.DatetimeField(default=datetime.now)
     updated_at = fields.DatetimeField(default=datetime.now)
 
-    async def to_entity(self, include_posts: bool = False) -> CategoryEntity:
-        posts = None
-        if include_posts:
-            await self.fetch_related("posts")
-            posts = [asdict(await post.to_entity()) for post in self.posts]
+    async def to_entity(self) -> CategoryEntity:
         return CategoryEntity(
             id=self.id,
             name=self.name,
             created_at=self.created_at,
             updated_at=self.updated_at,
-            posts=posts,
         )
 
 
@@ -47,16 +41,9 @@ class Post(models.Model):
         "models.User", related_name="saved_posts"
     )
 
-    async def to_entity(self, include_categories: bool = False) -> PostEntity:
+    async def to_entity(self) -> PostEntity:
         """Перевод из ORM в Entity."""
         await self.fetch_related("author")
-        categories = None
-        if include_categories:
-            await self.fetch_related("categories")
-            categories = [
-                asdict(await category.to_entity(category))
-                for category in self.categories
-            ]
 
         return PostEntity(
             id=self.id,
@@ -65,7 +52,6 @@ class Post(models.Model):
             created_at=self.created_at,
             updated_at=self.updated_at,
             author_id=self.author.id,
-            categories=categories,
         )
 
 
@@ -79,18 +65,8 @@ class User(models.Model):
     posts: fields.ReverseRelation["Post"]
     saved_posts: fields.ManyToManyRelation[Post]
 
-    async def to_entity(self, include_posts: bool = False) -> UserEntity:
+    async def to_entity(self) -> UserEntity:
         """Перевод из ORM в Entity."""
-        posts = None
-        saved_posts = None
-
-        if include_posts:
-            await self.fetch_related("posts", "saved_posts")
-            posts = [asdict(await post.to_entity()) for post in self.posts]
-            saved_posts = [
-                asdict(await post.to_entity()) for post in self.saved_posts
-            ]
-
         return UserEntity(
             id=self.id,
             email=self.email,
@@ -98,6 +74,4 @@ class User(models.Model):
             password=self.password,
             created_at=self.created_at,
             updated_at=self.updated_at,
-            posts=posts,
-            saved_posts=saved_posts,
         )
