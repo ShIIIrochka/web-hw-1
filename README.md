@@ -1,3 +1,6 @@
+# DB Schema
+![img.png](content/db-schema.png)
+
 # API
 
 ## Users
