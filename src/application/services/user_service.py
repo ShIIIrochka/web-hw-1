@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+
 from uuid import UUID
 
 from email_validator import validate_email
 from litestar.dto import DTOData
 
+from src.domain.entities.post import Post
 from src.domain.entities.user import User
 from src.domain.exceptions.user import EmailSyntaxError, UserNotFoundError
 from src.domain.repositories.user_repository import BaseUserRepository
@@ -130,6 +132,37 @@ class UserService:
             return await self._repo.delete(user_id)
         except ValueError:
             raise UserNotFoundError
+
+    async def save_post(self, user_id: UUID, post_id: UUID) -> None:
+        """Сохранение поста пользователем.
+
+        Args:
+            user_id (UUID): ID пользователя
+            post_id (UUID): ID поста
+        """
+        await self._repo.save_post(user_id, post_id)
+
+    async def unsave_post(self, user_id: UUID, post_id: UUID) -> None:
+        """Удаление сохраненного поста пользователем.
+
+        Args:
+            user_id (UUID): ID пользователя
+            post_id (UUID): ID поста
+        """
+        await self._repo.unsave_post(user_id, post_id)
+
+
+    async def get_saved_posts(self, user_id: UUID) -> list[Post]:
+        """Получение сохранённых постов пользователя.
+
+        Args:
+            user_id (UUID): ID пользователя
+
+        Returns:
+            list[User]: Список сохранённых постов
+        """
+        saved_posts = await self._repo.get_saved_posts(user_id)
+        return saved_posts
 
     @staticmethod
     async def _validate_email(email: str) -> None:

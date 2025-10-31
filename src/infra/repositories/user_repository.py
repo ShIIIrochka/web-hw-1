@@ -5,21 +5,25 @@ from uuid import UUID
 
 from tortoise.exceptions import DoesNotExist
 
+from src.domain.entities.post import Post
 from src.domain.entities.user import User
 from src.domain.repositories.user_repository import BaseUserRepository
 from src.infra.models import User as UserModel
+from src.infra.models import Post as PostModel
 
 
 class UserRepository(BaseUserRepository):
     """Реализация репозитория для работы с пользователями."""
 
-    def __init__(self, model: type[UserModel] = UserModel) -> None:
+    def __init__(self, model: type[UserModel] = UserModel, post_model: type[PostModel] = PostModel) -> None:
         """Конструктор.
 
         Args:
-            model (str): ORM модель
+            model (type[UserModel]): ORM модель
+            post_model (type[PostModel]): ORM модель поста
         """
         self._model = model
+        self._post_model = post_model
 
     async def add(self, data: User) -> str:
         """Добавление нового пользователя."""
@@ -55,3 +59,28 @@ class UserRepository(BaseUserRepository):
         """Удаление пользователя по ID."""
         deleted_count = await self._model.filter(id=id).delete()
         return deleted_count > 0
+
+    async def save_post(self, user_id: UUID, post_id: UUID) -> None:
+        """Сохранение поста пользователем."""
+        user = await self._model.get(id=user_id)
+        post = await self._post_model.get(id=post_id)
+        await user.saved_posts.add(post)
+
+    async def unsave_post(self, user_id: UUID, post_id: UUID) -> None:
+        """Удаление сохраненного поста пользователем."""
+        user = await self._model.get(id=user_id)
+        post = await self._post_model.get(id=post_id)
+        await user.saved_posts.remove(post)
+
+
+    async def get_saved_posts(self, user_id: UUID) -> list[Post]:
+        """Получение сохранённых постов пользователя.
+
+        Args:
+            user_id (UUID): ID пользователя
+
+        Returns:
+            list[User]: Список сохранённых постов
+        """
+        posts = await self._post_model.filter(saved_by__id=user_id).all()
+        return [await post.to_entity() for post in posts]
