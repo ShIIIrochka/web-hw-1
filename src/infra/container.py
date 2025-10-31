@@ -3,18 +3,18 @@
 from jam.aio import Jam
 from punq import Container
 
-from src.application.services.category_service import CategoryService
-from src.infra.gateways.database import PostgresGateway
-from src.infra.repositories.category_repository import CategoryRepository
-from src.infra.repositories.post_repository import PostRepository
-from src.infra.repositories.user_repository import UserRepository
 from src.application.services.auth_service import AuthService
+from src.application.services.category_service import CategoryService
 from src.application.services.post_service import PostService
 from src.application.services.user_service import UserService
 from src.infra.config import Config
+from src.infra.gateways.database import PostgresGateway
 from src.infra.gateways.interfaces import DBGateway
 from src.infra.providers.interfaces import AuthProvider
 from src.infra.providers.jwt import JWTProvider
+from src.infra.repositories.category_repository import CategoryRepository
+from src.infra.repositories.post_repository import PostRepository
+from src.infra.repositories.user_repository import UserRepository
 
 
 def container_builder() -> Container:
@@ -86,8 +86,7 @@ def container_builder() -> Container:
         PostService,
         factory=lambda: PostService(
             repository=container.resolve("PostRepo"),
-            # provide category service so PostService can fetch/attach categories
-            category_service=container.resolve(CategoryService),
+            category_repository=container.resolve("CategoryRepo"),
         ),
     )
 
