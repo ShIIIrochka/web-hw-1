@@ -64,6 +64,9 @@ class Comment(models.Model):
     post: fields.ForeignKeyRelation[Post] = fields.ForeignKeyField(
         "models.Post", related_name="comments"
     )
+    author: fields.ForeignKeyRelation["User"] = fields.ForeignKeyField(
+        "models.User", related_name="comments"
+    )
 
 
 class User(models.Model):
@@ -78,6 +81,7 @@ class User(models.Model):
     followers: fields.ManyToManyRelation["User"] = fields.ManyToManyField(
         "models.User", related_name="following", through="user_followers"
     )
+    comments: fields.ReverseRelation["Comment"]
 
     async def to_entity(self) -> UserEntity:
         """Перевод из ORM в Entity."""
