@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+
 from typing import Sequence
+from uuid import UUID
 
 from litestar import Controller, Request, get, post
 from litestar.datastructures import State
@@ -45,7 +47,7 @@ class CategoryController(Controller):
     async def get_all_categories(
         self,
         limit: int = 10,
-        cursor: str | None = None,
+        cursor: UUID | None = None,
         container: Container = None,
     ) -> Sequence[CategoryDTO]:
         """Получение всех категорий."""
