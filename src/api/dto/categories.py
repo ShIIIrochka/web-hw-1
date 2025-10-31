@@ -10,10 +10,10 @@ from src.domain.entities.category import Category
 class CategoryDTO(DataclassDTO[Category]):
     """DTO для категории."""
 
-    config = DTOConfig(underscore_fields_private=True)
+    config = DTOConfig()
 
 
 class CreateCategoryDTO(DataclassDTO[Category]):
     """DTO для создания категории."""
 
-    config = DTOConfig()
+    config = DTOConfig(exclude={"created_at", "updated_at", "id"})
