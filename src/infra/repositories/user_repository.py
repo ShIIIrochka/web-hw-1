@@ -24,9 +24,6 @@ class UserRepository(BaseUserRepository):
     async def add(self, data: User) -> str:
         """Добавление нового пользователя."""
         user_dict = asdict(data)
-        user_dict.pop("id", None)
-        user_dict.pop("posts", None)
-        user_dict.pop("saved_posts", None)
         result = await self._model.create(**user_dict)
         return str(result.id)
 
@@ -34,7 +31,7 @@ class UserRepository(BaseUserRepository):
         """Получение пользователя по ID."""
         try:
             user = await self._model.get(id=UUID(id))
-            return await user.to_entity(include_posts=True)
+            return await user.to_entity()
         except DoesNotExist:
             return None
 
@@ -43,20 +40,18 @@ class UserRepository(BaseUserRepository):
         user = await self._model.filter(**query).first()
         if not user:
             return None
-        return await user.to_entity(include_posts=True)
+        return await user.to_entity()
 
-    async def update(self, user_id: str, data: User) -> User:
+    async def update(self, user_id: UUID, data: User) -> User:
         """Обновление пользователя."""
         update_data = asdict(data)
         update_data.pop("id", None)
-        update_data.pop("posts", None)
-        update_data.pop("saved_posts", None)
 
-        await self._model.filter(id=UUID(user_id)).update(**update_data)
+        await self._model.filter(id=user_id).update(**update_data)
         updated = await self._model.get_or_none(id=user_id)
-        return await updated.to_entity(include_posts=True) if updated else data
+        return await updated.to_entity() if updated else data
 
-    async def delete(self, id: str) -> bool:
+    async def delete(self, id: UUID) -> bool:
         """Удаление пользователя по ID."""
-        deleted_count = await self._model.filter(id=UUID(id)).delete()
+        deleted_count = await self._model.filter(id=id).delete()
         return deleted_count > 0
