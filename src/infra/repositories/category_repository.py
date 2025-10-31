@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from dataclasses import asdict
 from uuid import UUID
 
@@ -21,28 +22,26 @@ class CategoryRepository(BaseCategoryRepository):
     async def add(self, data: Category) -> str:
         """Добавление документа в БД."""
         category_data = asdict(data)
-        category_data.pop("id", None)
-        category_data.pop("posts", None)
         category = await self._model.create(**category_data)
         return str(category.id)
 
-    async def get_by_id(self, id: str) -> Category | None:
+    async def get_by_id(self, id: UUID) -> Category | None:
         """Получение конкретного объекта из БД."""
-        category = await self._model.get_or_none(id=UUID(id))
+        category = await self._model.get_or_none(id=id)
         if category is None:
             return None
-        return await category.to_entity(False)
+        return await category.to_entity()
 
     async def get_many(
-        self, cursor: str | None, limit: int = 10
+        self, cursor: UUID | None, limit: int = 10
     ) -> list[Category]:
         """Получение N объектов из БД."""
         query = self._model.all().limit(limit)
         if cursor:
-            query = query.filter(self._model.id > UUID(cursor))
+            query = query.filter(id__gt=cursor)
         categories = await query
         result = []
         for category in categories:
-            entity = await category.to_entity(False)
+            entity = await category.to_entity()
             result.append(entity)
         return result
