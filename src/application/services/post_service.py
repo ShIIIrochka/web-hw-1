@@ -8,7 +8,6 @@ from src.domain.entities.post import Post
 from src.domain.entities.user import User
 from src.domain.exceptions.category import CategoryNotFoundError
 from src.domain.exceptions.post import PostNotFoundError, PostPermissionError
-from src.domain.repositories.category_repository import BaseCategoryRepository
 from src.domain.repositories.post_repository import BasePostRepository
 
 
@@ -18,16 +17,13 @@ class PostService:
     def __init__(
         self,
         repository: BasePostRepository,
-        category_repository: BaseCategoryRepository,
     ) -> None:
         """Конструктор.
 
         Args:
             repository (BaseRepository): Репозиторий для работы с постами
-            category_repository (BaseCategoryRepository): Репозиторий для работы с категориями
         """
         self._repo = repository
-        self._category_repo = category_repository
 
     async def get_post_by_id(self, post_id: UUID) -> Post:
         """Получение поста по ID.
@@ -50,6 +46,19 @@ class PostService:
             return post
         else:
             raise PostNotFoundError
+
+    async def get_posts_by_author(self, author_id: UUID) -> list[Post]:
+        """Получение постов пользователя.
+
+        Args:
+            author_id (UUID): ID пользователя
+
+        Returns:
+            list[Post]: Список постов пользователя
+        """
+
+        posts = await self._repo.get_many({"author_id": author_id})
+        return posts
 
     async def create_post(self, user: User, data: DTOData[Post]) -> Post:
         """Создание поста.
