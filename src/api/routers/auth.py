@@ -10,14 +10,12 @@ from litestar.exceptions import (
 )
 from punq import Container
 
-from src.api.dto.users import LoginUserDTO
-from src.domain.exceptions.user import UserNotFoundError
 from src.api.dto.tokens import JWTTokens
-from src.api.dto.users import CreateUserDTO
+from src.api.dto.users import CreateUserDTO, LoginUserDTO
 from src.application.services.auth_service import AuthService
 from src.application.services.user_service import UserService
 from src.domain.entities.user import User
-from src.domain.exceptions.user import EmailSyntaxError
+from src.domain.exceptions.user import EmailSyntaxError, UserNotFoundError
 from src.domain.value_objects.tokens import JWT
 from src.infra.config import Config
 
