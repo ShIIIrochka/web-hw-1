@@ -9,8 +9,8 @@ from litestar.exceptions import NotAuthorizedException, NotFoundException
 from litestar.status_codes import HTTP_200_OK
 from punq import Container
 
-from api.guards.auth import auth_guard
 from src.api.dto.categories import CategoryDTO, CreateCategoryDTO
+from src.api.guards.auth import auth_guard
 from src.application.services.category_service import CategoryService
 from src.domain.entities.category import Category
 from src.domain.entities.user import User

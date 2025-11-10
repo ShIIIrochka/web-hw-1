@@ -9,7 +9,7 @@ from litestar.exceptions import ValidationException
 from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from punq import Container
 
-from api.dto.posts import PostDTO
+from src.api.dto.posts import PostDTO
 from src.api.dto.users import UpdateUserDTO, UserDTO
 from src.api.guards.auth import auth_guard
 from src.application.services.user_service import UserService
