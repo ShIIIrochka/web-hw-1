@@ -5,8 +5,8 @@ from uuid import UUID
 
 from src.domain.entities.post import Post
 from src.domain.repositories.post_repository import BasePostRepository
-from src.infra.models import Category as CategoryModel
-from src.infra.models import Post as PostModel
+from src.infra.models.category import Category as CategoryModel
+from src.infra.models.post import Post as PostModel
 
 
 class PostRepository(BasePostRepository):

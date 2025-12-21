@@ -8,8 +8,8 @@ from tortoise.exceptions import DoesNotExist
 from src.domain.entities.post import Post
 from src.domain.entities.user import User
 from src.domain.repositories.user_repository import BaseUserRepository
-from src.infra.models import Post as PostModel
-from src.infra.models import User as UserModel
+from src.infra.models.post import Post as PostModel
+from src.infra.models.user import User as UserModel
 
 
 class UserRepository(BaseUserRepository):

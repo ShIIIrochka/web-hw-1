@@ -5,7 +5,7 @@ from uuid import UUID
 
 from src.domain.entities.category import Category
 from src.domain.repositories.category_repository import BaseCategoryRepository
-from src.infra.models import Category as CategoryModel
+from src.infra.models.category import Category as CategoryModel
 
 
 class CategoryRepository(BaseCategoryRepository):
