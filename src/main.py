@@ -11,7 +11,7 @@ from litestar.openapi.spec import Components, SecurityScheme
 
 from src.api.routers import routers
 from src.infra.container import container_builder
-from src.infra.gateways.interfaces import DBGateway
+from src.infra.gateways.interfaces import DBProvider
 from src.middlewares.auth_middleware import middlewares
 
 
@@ -33,7 +33,7 @@ openapi_config = OpenAPIConfig(
 
 @asynccontextmanager
 async def lifespan(app: Litestar):
-    db_gateway = app.state.container.resolve(DBGateway)
+    db_gateway = app.state.container.resolve(DBProvider)
     await db_gateway.init()
     yield
     await db_gateway.close()

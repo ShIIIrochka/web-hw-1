@@ -8,9 +8,8 @@ from src.application.services.category_service import CategoryService
 from src.application.services.post_service import PostService
 from src.application.services.user_service import UserService
 from src.infra.config import Config
-from src.infra.gateways.database import PostgresGateway
-from src.infra.gateways.interfaces import DBGateway
-from src.infra.providers.interfaces import AuthProvider
+from src.infra.providers.database import PostgresProvider
+from src.infra.providers.interfaces import AuthProvider, DBProvider
 from src.infra.providers.jwt import JWTProvider
 from src.infra.repositories.category_repository import CategoryRepository
 from src.infra.repositories.post_repository import PostRepository
@@ -37,8 +36,8 @@ def container_builder() -> Container:
     )
 
     container.register(
-        DBGateway,
-        instance=PostgresGateway(
+        DBProvider,
+        instance=PostgresProvider(
             uri=container.resolve(Config).db_uri,
             modules={"models": ["src.infra.models"]},
         ),

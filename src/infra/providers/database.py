@@ -2,11 +2,11 @@
 
 from tortoise import Tortoise
 
-from .interfaces import DBGateway
+from .interfaces import DBProvider
 
 
-class PostgresGateway(DBGateway):
-    """Гейтвей для подключения к MongoDB."""
+class PostgresProvider(DBProvider):
+    """Провайдер для подключения к MongoDB."""
 
     def __init__(
         self,
