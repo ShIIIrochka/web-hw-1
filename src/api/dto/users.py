@@ -17,7 +17,7 @@ class UserDTO(DataclassDTO[User]):
 class CreateUserDTO(DataclassDTO[User]):
     """DTO для создания пользователя."""
 
-    config = DTOConfig(exclude={"updated_at", "created_at", "id"})
+    config = DTOConfig(exclude={"updated_at", "created_at", "id", "is_admin"})
 
 
 class UpdateUserDTO(DataclassDTO[User]):

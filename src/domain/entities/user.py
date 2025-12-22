@@ -15,17 +15,21 @@ class User(BaseModel):
     email: str
     login: str
     password: str
+    is_admin: bool = False
     created_at: datetime = datetime.now()
     updated_at: datetime = datetime.now()
 
     @classmethod
-    def create(cls, email: str, login: str, password: str) -> User:
+    def create(
+        cls, email: str, login: str, password: str, is_admin: bool = False
+    ) -> User:
         """Создает нового пользователя.
 
         Args:
             email (str): Электронная почта
             login (str): Логин
             password (str): Пароль
+            is_admin (bool): Админ ли пользователь
 
         Returns:
             User: Созданный пользователь
@@ -34,6 +38,7 @@ class User(BaseModel):
             email=email,
             login=login,
             password=password,
+            is_admin=is_admin,
             created_at=datetime.now(),
             updated_at=datetime.now(),
         )

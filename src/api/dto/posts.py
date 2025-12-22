@@ -23,4 +23,4 @@ class CreatePostDTO(DataclassDTO[Post]):
 class UpdatePostDTO(DataclassDTO[Post]):
     """DTO для обновления поста."""
 
-    config = DTOConfig(include={"title", "content", "category_ids"})
+    config = DTOConfig(include={"title", "content", "categories"})

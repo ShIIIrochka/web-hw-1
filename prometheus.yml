@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "opensearch"
+    metrics_path: /_prometheus/metrics
+    scheme: http
+    static_configs:
+      - targets:
+          - opensearch:9600
+  - job_name: "litestar"
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - 172.17.0.1:8000

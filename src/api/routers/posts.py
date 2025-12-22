@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import annotations
+
 from uuid import UUID
 
 from litestar import Controller, Request, delete, get, post, put
@@ -9,16 +11,21 @@ from litestar.exceptions import (
     NotFoundException,
     PermissionDeniedException,
 )
+from litestar.params import Parameter
 from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from punq import Container
 
+from src.api.dto.pagination import PaginatedResponseDTO
 from src.api.dto.posts import CreatePostDTO, PostDTO, UpdatePostDTO
+from src.api.dto.search import PostSearchHitDTO, PostSearchResultDTO
 from src.api.guards.auth import auth_guard
+from src.application.services.post_search_service import PostSearchService
 from src.application.services.post_service import PostService
 from src.domain.entities.post import Post
 from src.domain.entities.user import User
 from src.domain.exceptions.category import CategoryNotFoundError
 from src.domain.exceptions.post import PostNotFoundError, PostPermissionError
+from src.domain.value_objects.cursor import Page
 
 
 class PostController(Controller):
@@ -116,3 +123,80 @@ class PostController(Controller):
         post_service: PostService = container.resolve(PostService)
         posts = await post_service.get_posts_by_author(author_id)
         return posts
+
+    @get(
+        "",
+        status_code=HTTP_200_OK,
+        return_dto=PaginatedResponseDTO,
+    )
+    async def get_posts(
+        self,
+        container: Container,
+        cursor: UUID | None = Parameter(
+            default=None,
+            query="cursor",
+            description="Cursor for pagination",
+        ),
+        limit: int = Parameter(
+            default=10,
+            query="limit",
+            ge=1,
+            le=100,
+            description="Number of posts per page",
+        ),
+    ) -> Page:
+        """Получение списка постов с cursor-offset пагинацией."""
+        post_service: PostService = container.resolve(PostService)
+        try:
+            page = await post_service.get_posts_paginated(cursor, limit)
+            return page
+        except ValueError as e:
+            raise NotFoundException(detail=str(e))
+
+    @get(
+        "/search",
+        status_code=HTTP_200_OK,
+    )
+    async def search_posts(
+        self,
+        container: Container,
+        search_query: str = Parameter(
+            query="search_query",
+            description="Search query",
+        ),
+        limit: int = Parameter(
+            default=10,
+            query="limit",
+            ge=1,
+            le=100,
+        ),
+        offset: int = Parameter(
+            default=0,
+            query="offset",
+            ge=0,
+        ),
+    ) -> PostSearchResultDTO:
+        """Полнотекстовый поиск постов через OpenSearch."""
+        search_service: PostSearchService = container.resolve(PostSearchService)
+        result = await search_service.search_posts(search_query, limit, offset)
+
+        hits_dto = [
+            PostSearchHitDTO(
+                post_id=hit.post_id,
+                title=hit.title,
+                content=hit.content,
+                author_id=hit.author_id,
+                created_at=hit.created_at,
+                updated_at=hit.updated_at,
+                score=hit.score,
+                highlight=hit.highlight,
+            )
+            for hit in result.hits
+        ]
+
+        return PostSearchResultDTO(
+            hits=hits_dto,
+            total=result.total,
+            limit=result.limit,
+            offset=result.offset,
+        )

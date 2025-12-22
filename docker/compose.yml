@@ -1,0 +1,196 @@
+version: '3.8'
+
+services:
+  # База данных PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: blog-postgres
+    environment:
+      POSTGRES_DB: blog
+      POSTGRES_USER: blog
+      POSTGRES_PASSWORD: blogpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blog"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis для кэширования
+  redis:
+    image: redis:7-alpine
+    container_name: blog-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # OpenSearch для полнотекстового поиска
+  opensearch:
+    image: opensearchproject/opensearch:2.11.1
+    container_name: blog-opensearch
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=Admin123!
+      - plugins.security.disabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Loki для хранения логов
+  loki:
+    image: grafana/loki:2.9.3
+    container_name: blog-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Promtail для сбора логов
+  promtail:
+    image: grafana/promtail:2.9.3
+    container_name: blog-promtail
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml
+      - /var/log/blog:/var/log/blog:ro
+      - promtail_positions:/tmp
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+  # Prometheus для сбора метрик
+  prometheus:
+    image: prom/prometheus:v2.48.1
+    container_name: blog-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Grafana для дашбордов
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: blog-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Приложение Blog API
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: blog-app
+    environment:
+      - DB_URI=postgres://blog:blogpass@postgres:5432/blog
+      - SECRET_KEY=your-secret-key-change-in-production
+      - DEBUG=True
+      - LOG_LEVEL=INFO
+      - REDIS_URL=redis://redis:6379/0
+      - CACHE_TTL_SECONDS=60
+      - OPENSEARCH_URL=http://opensearch:9200
+      - OPENSEARCH_INDEX=posts
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../src:/app/src
+      - /var/log/blog:/var/log/blog
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Outbox Worker для обработки событий
+  outbox-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: blog-outbox-worker
+    environment:
+      - DB_URI=postgres://blog:blogpass@postgres:5432/blog
+      - SECRET_KEY=your-secret-key-change-in-production
+      - LOG_LEVEL=INFO
+      - REDIS_URL=redis://redis:6379/0
+      - OPENSEARCH_URL=http://opensearch:9200
+      - OPENSEARCH_INDEX=posts
+      - OUTBOX_BATCH_SIZE=10
+      - OUTBOX_POLL_INTERVAL=5
+    volumes:
+      - ../src:/app/src
+      - /var/log/blog:/var/log/blog
+    depends_on:
+      postgres:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+    command: python -m src.infra.workers.outbox_worker
+
+volumes:
+  postgres_data:
+  redis_data:
+  opensearch_data:
+  loki_data:
+  prometheus_data:
+  grafana_data:
+  promtail_positions:

@@ -38,4 +38,3 @@ class AuthMiddleware(AbstractAuthenticationMiddleware):
 
 
 auth_mw = DefineMiddleware(AuthMiddleware, exclude="schema")
-middlewares = [auth_mw]

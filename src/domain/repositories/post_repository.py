@@ -42,3 +42,10 @@ class BasePostRepository(ABC):
     ) -> list[Post]:
         """Получение N объектов из БД."""
         raise NotImplementedError
+
+    @abstractmethod
+    async def get_paginated(
+        self, cursor_id: UUID | None, limit: int
+    ) -> list[Post]:
+        """Получение объектов с пагинацией."""
+        raise NotImplementedError

@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import annotations
+
 from dataclasses import asdict
 from uuid import UUID
 
@@ -58,6 +60,30 @@ class PostRepository(BasePostRepository):
         if cursor:
             result = result.filter(id__gt=cursor)
         posts = await result.limit(limit)
+        return [await post.to_entity() for post in posts]
+
+    async def get_paginated(
+        self,
+        cursor_id: UUID | None = None,
+        limit: int = 10,
+    ) -> list[Post]:
+        """Получение постов с cursor-offset пагинацией.
+
+        Args:
+            cursor_id: id из курсора
+            limit: количество постов
+
+        Returns:
+            Список постов
+        """
+
+        query = self._model.all()
+
+        if cursor_id:
+            query = query.filter(id__lt=cursor_id)
+
+        posts = await query.order_by("-created_at", "-id").limit(limit)
+
         return [await post.to_entity() for post in posts]
 
     async def update(self, id: UUID, update_data: Post) -> Post:

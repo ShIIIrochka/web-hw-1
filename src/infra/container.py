@@ -1,32 +1,50 @@
-# -*- coding: utf-8 -*2-
+# -*- coding: utf-8 -*-
+
+from __future__ import annotations
 
 from jam.aio import Jam
 from punq import Container
 
 from src.application.services.auth_service import AuthService
 from src.application.services.category_service import CategoryService
+from src.application.services.post_search_service import PostSearchService
 from src.application.services.post_service import PostService
 from src.application.services.user_service import UserService
+from src.domain.repositories.post_search_repository import (
+    BasePostSearchRepository,
+)
 from src.infra.config import Config
+from src.infra.providers.cache import RedisCacheProvider
 from src.infra.providers.database import PostgresProvider
-from src.infra.providers.interfaces import AuthProvider, DBProvider
+from src.infra.providers.interfaces import (
+    AuthProvider,
+    CacheProvider,
+    DBProvider,
+)
 from src.infra.providers.jwt import JWTProvider
+from src.infra.providers.opensearch import OpenSearchClientProvider
 from src.infra.repositories.category_repository import CategoryRepository
+from src.infra.repositories.outbox_repository import OutboxRepository
 from src.infra.repositories.post_repository import PostRepository
+from src.infra.repositories.post_search_repository import (
+    PostSearchRepository,
+)
 from src.infra.repositories.user_repository import UserRepository
 
 
 def container_builder() -> Container:
+    """Сборка DI-контейнера приложения."""
     container = Container()
 
-    container.register(Config, instance=Config.get_config())
+    config = Config.get_config()
+    container.register(Config, instance=config)
 
     container.register(
         Jam,
         instance=Jam(
             config={
                 "auth_type": "jwt",
-                "secret_key": (container.resolve(Config)).secret_key,
+                "secret_key": config.secret_key,
             }
         ),
     )
@@ -38,23 +56,43 @@ def container_builder() -> Container:
     container.register(
         DBProvider,
         instance=PostgresProvider(
-            uri=container.resolve(Config).db_uri,
+            uri=config.db_uri,
             modules={"models": ["src.infra.models"]},
         ),
     )
 
     container.register(
-        AuthService,
-        factory=lambda: AuthService(
-            auth_provider=container.resolve(AuthProvider),
-            access_exp=container.resolve(Config).access_exp,
-            refresh_exp=container.resolve(Config).refresh_exp,
+        CacheProvider,
+        instance=RedisCacheProvider(
+            uri=config.redis_uri,
+            default_ttl=config.cache_ttl_seconds,
         ),
     )
 
+    opensearch_client_provider = OpenSearchClientProvider(
+        uri=config.opensearch_uri
+    )
     container.register(
-        "UserRepo",
-        factory=lambda: UserRepository(),
+        OpenSearchClientProvider, instance=opensearch_client_provider
+    )
+
+    search_repo = PostSearchRepository(
+        client_provider=opensearch_client_provider
+    )
+    container.register(BasePostSearchRepository, instance=search_repo)
+
+    container.register("UserRepo", factory=lambda: UserRepository())
+    container.register("PostRepo", factory=lambda: PostRepository())
+    container.register("CategoryRepo", factory=lambda: CategoryRepository())
+    container.register("OutboxRepo", factory=lambda: OutboxRepository())
+
+    container.register(
+        AuthService,
+        factory=lambda: AuthService(
+            auth_provider=container.resolve(AuthProvider),
+            access_exp=config.access_exp,
+            refresh_exp=config.refresh_exp,
+        ),
     )
 
     container.register(
@@ -62,16 +100,6 @@ def container_builder() -> Container:
         factory=lambda: UserService(
             repository=container.resolve("UserRepo"),
         ),
-    )
-
-    container.register(
-        "PostRepo",
-        factory=lambda: PostRepository(),
-    )
-
-    container.register(
-        "CategoryRepo",
-        factory=lambda: CategoryRepository(),
     )
 
     container.register(
@@ -85,6 +113,14 @@ def container_builder() -> Container:
         PostService,
         factory=lambda: PostService(
             repository=container.resolve("PostRepo"),
+            outbox_repository=container.resolve("OutboxRepo"),
+        ),
+    )
+
+    container.register(
+        PostSearchService,
+        factory=lambda: PostSearchService(
+            search_repository=container.resolve(BasePostSearchRepository),
         ),
     )
 
