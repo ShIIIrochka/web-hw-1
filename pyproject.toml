@@ -14,11 +14,8 @@ dependencies = [
     "jamlib>=2.2.5",
     "litestar[prometheus]>=2.17.0",
     "opensearch-py>=2.8.0",
-    "prometheus-client>=0.22.0",
     "punq>=0.7.0",
     "redis>=7.1.0",
-    "taskiq>=0.11.7",
-    "taskiq-redis>=1.0.2",
     "tortoise-orm>=0.25.1",
     "uvicorn>=0.37.0",
 ]
