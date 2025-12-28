@@ -46,7 +46,9 @@ class CategoryRepository(BaseCategoryRepository):
             result.append(entity)
         return result
 
-    async def delete(self, id: UUID) -> bool:
-        """Удаление объекта."""
-        deleted_count = await self._model.filter(id=id).delete()
-        return deleted_count > 0
+    async def get_by_name(self, name: str) -> Category | None:
+        """Получение категории по имени."""
+        category = await self._model.get_or_none(name=name)
+        if category is None:
+            return None
+        return await category.to_entity()

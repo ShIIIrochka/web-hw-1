@@ -8,7 +8,7 @@ from litestar.exceptions import (
     NotFoundException,
     ValidationException,
 )
-from litestar.status_codes import HTTP_200_OK
+from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from punq import Container
 
 from src.api.dto.tokens import JWTTokens
@@ -41,20 +41,35 @@ class AuthController(Controller):
 
         user_service: UserService = container.resolve(UserService)
         auth_service: AuthService = container.resolve(AuthService)
+        config: Config = container.resolve(Config)
         try:
             user = await user_service.create_user(data)
         except EmailSyntaxError:
             raise ValidationException(detail="Invalid email format.")
         tokens = await auth_service.auth_user(user)
+
+        # Use 'lax' for dev (localhost), 'none' for prod with HTTPS
+        samesite = "lax" if config.debug else "none"
+        secure = not config.debug
+
         return Response(
             tokens,
             cookies=[
                 Cookie(
-                    key="token",
+                    key="access_token",
+                    value=tokens.access,
+                    httponly=True,
+                    samesite=samesite,
+                    secure=secure,
+                    max_age=config.access_exp,
+                ),
+                Cookie(
+                    key="refresh_token",
                     value=tokens.refresh,
                     httponly=True,
-                    samesite="strict",
-                    max_age=container.resolve(Config).refresh_exp,
+                    samesite=samesite,
+                    secure=secure,
+                    max_age=config.refresh_exp,
                 ),
             ],
             headers={"Authorization": f"Bearer {tokens.access}"},
@@ -72,20 +87,34 @@ class AuthController(Controller):
     ) -> Response[JWT]:
         """Обновление токенов."""
         auth_service: AuthService = container.resolve(AuthService)
-        token: str | None = request.cookies.get("token")
+        config: Config = container.resolve(Config)
+        token: str | None = request.cookies.get("refresh_token")
         if token:
             tokens = await auth_service.refresh_tokens(token)
         else:
             raise NotAuthorizedException
+
+        samesite = "lax" if config.debug else "none"
+        secure = not config.debug
+
         return Response(
             tokens,
             cookies=[
                 Cookie(
-                    key="token",
+                    key="access_token",
+                    value=tokens.access,
+                    httponly=True,
+                    samesite=samesite,
+                    secure=secure,
+                    max_age=config.access_exp,
+                ),
+                Cookie(
+                    key="refresh_token",
                     value=tokens.refresh,
                     httponly=True,
-                    samesite="strict",
-                    max_age=container.resolve(Config).refresh_exp,
+                    samesite=samesite,
+                    secure=secure,
+                    max_age=config.refresh_exp,
                 ),
             ],
             headers={"Authorization": f"Bearer {tokens.access}"},
@@ -105,6 +134,7 @@ class AuthController(Controller):
         """Вход пользователя."""
         user_service: UserService = container.resolve(UserService)
         auth_service: AuthService = container.resolve(AuthService)
+        config: Config = container.resolve(Config)
         try:
             user = await user_service.get_user(data)
         except UserNotFoundError as e:
@@ -112,16 +142,65 @@ class AuthController(Controller):
         except EmailSyntaxError as e:
             raise ValidationException(detail=str(e))
         tokens = await auth_service.auth_user(user)
+
+        samesite = "lax" if config.debug else "none"
+        secure = not config.debug
+
         return Response(
             tokens,
             cookies=[
                 Cookie(
-                    key="token",
+                    key="access_token",
+                    value=tokens.access,
+                    httponly=True,
+                    samesite=samesite,
+                    secure=secure,
+                    max_age=config.access_exp,
+                ),
+                Cookie(
+                    key="refresh_token",
                     value=tokens.refresh,
                     httponly=True,
-                    samesite="strict",
-                    max_age=container.resolve(Config).refresh_exp,
+                    samesite=samesite,
+                    secure=secure,
+                    max_age=config.refresh_exp,
                 ),
             ],
             headers={"Authorization": f"Bearer {tokens.access}"},
+        )
+
+    @post(
+        path="/logout",
+        status_code=HTTP_204_NO_CONTENT,
+    )
+    async def logout(
+        self,
+        container: Container,
+    ) -> Response[None]:
+        """Выход пользователя (очистка cookies)."""
+        config: Config = container.resolve(Config)
+
+        samesite = "lax" if config.debug else "none"
+        secure = not config.debug
+
+        return Response(
+            None,
+            cookies=[
+                Cookie(
+                    key="access_token",
+                    value="",
+                    httponly=True,
+                    samesite=samesite,
+                    secure=secure,
+                    max_age=0,
+                ),
+                Cookie(
+                    key="refresh_token",
+                    value="",
+                    httponly=True,
+                    samesite=samesite,
+                    secure=secure,
+                    max_age=0,
+                ),
+            ],
         )

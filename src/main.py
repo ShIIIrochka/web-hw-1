@@ -7,10 +7,12 @@ import os
 from contextlib import asynccontextmanager
 
 from litestar import Litestar
+from litestar.config.cors import CORSConfig
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.spec import Components, SecurityScheme
 
 from src.api.routers import routers
+from src.infra.config import Config
 from src.infra.container import container_builder
 from src.infra.logging import setup_logging
 from src.infra.providers.interfaces import DBProvider
@@ -38,6 +40,16 @@ openapi_config = OpenAPIConfig(
 
 container = container_builder()
 
+# Get config for CORS
+config = container.resolve(Config)
+
+cors_config = CORSConfig(
+    allow_origins=[config.frontend_origin],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
+
 
 @asynccontextmanager
 async def lifespan(app: Litestar):
@@ -59,6 +71,7 @@ app = Litestar(
     debug=True,
     dependencies={"container": lambda: container},
     middleware=[*middlewares],
+    cors_config=cors_config,
     openapi_config=openapi_config,
     lifespan=[lifespan],
 )

@@ -5,7 +5,11 @@ from uuid import UUID
 
 from litestar import Controller, Request, get, post
 from litestar.datastructures import State
-from litestar.exceptions import NotAuthorizedException, NotFoundException
+from litestar.exceptions import (
+    NotAuthorizedException,
+    NotFoundException,
+    ValidationException,
+)
 from litestar.status_codes import HTTP_200_OK
 from punq import Container
 
@@ -14,7 +18,10 @@ from src.api.guards.auth import auth_guard
 from src.application.services.category_service import CategoryService
 from src.domain.entities.category import Category
 from src.domain.entities.user import User
-from src.domain.exceptions.category import CategoryNotFoundError
+from src.domain.exceptions.category import (
+    CategoryAlreadyExistsError,
+    CategoryNotFoundError,
+)
 
 
 class CategoryController(Controller):
@@ -41,8 +48,11 @@ class CategoryController(Controller):
         if not user:
             raise NotAuthorizedException
         category_service = container.resolve(CategoryService)
-        category = await category_service.create_category(data)
-        return category
+        try:
+            category = await category_service.create_category(data)
+            return category
+        except CategoryAlreadyExistsError as e:
+            raise ValidationException(detail=str(e))
 
     @get(path="", status_code=HTTP_200_OK)
     async def get_all_categories(

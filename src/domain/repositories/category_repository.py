@@ -29,10 +29,6 @@ class BaseCategoryRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def delete(self, id: UUID) -> bool:
-        """Удаление объекта.
-
-        Returns:
-            bool: True если объект удален, False если не найден
-        """
+    async def get_by_name(self, name: str) -> Category | None:
+        """Получение категории по имени."""
         raise NotImplementedError

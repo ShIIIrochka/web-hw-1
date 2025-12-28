@@ -2,7 +2,10 @@
 from uuid import UUID
 
 from src.domain.entities.category import Category
-from src.domain.exceptions.category import CategoryNotFoundError
+from src.domain.exceptions.category import (
+    CategoryAlreadyExistsError,
+    CategoryNotFoundError,
+)
 from src.domain.repositories.category_repository import BaseCategoryRepository
 
 
@@ -21,11 +24,23 @@ class CategoryService:
         """Создание категории.
 
         Args:
+            data: Данные категории
 
         Returns:
             Category: Созданная категория
+
+        Raises:
+            CategoryAlreadyExistsError: Если категория с таким именем уже существует
         """
-        name = data.name
+        name = data.name.strip()
+
+        # Проверяем, существует ли категория с таким именем
+        existing = await self._repo.get_by_name(name)
+        if existing:
+            raise CategoryAlreadyExistsError(
+                f"Категория '{name}' уже существует"
+            )
+
         category = Category.create(name=name)
         await self._repo.add(category)
         return category
@@ -58,20 +73,3 @@ class CategoryService:
         if not category:
             raise CategoryNotFoundError
         return category
-
-    async def delete_category(self, id: UUID) -> bool:
-        """Удаление категории.
-
-        Args:
-            id (UUID): ID категории
-
-        Returns:
-            bool: Статус удаления
-
-        Raises:
-            CategoryNotFoundError: Если категория не найдена
-        """
-        category = await self._repo.get_by_id(id)
-        if not category:
-            raise CategoryNotFoundError
-        return await self._repo.delete(id)

@@ -14,6 +14,7 @@ class Config:
     secret_key: str
     opensearch_uri: str
     redis_uri: str
+    frontend_origin: str
     cache_ttl_seconds: int = 60
     search_cache_popularity_threshold: int = 10
     search_cache_ttl_seconds: int = 300
@@ -34,6 +35,9 @@ class Config:
             db_uri=db_uri,
             secret_key=os.getenv("SECRET_KEY", "test"),
             redis_uri=redis_uri,
+            frontend_origin=os.getenv(
+                "FRONTEND_ORIGIN", "http://localhost:5173"
+            ),
             cache_ttl_seconds=int(os.getenv("CACHE_TTL_SECONDS", "60")),
             search_cache_popularity_threshold=int(
                 os.getenv("CACHE_POPULARITY_THRESHOLD", "10")

@@ -2,8 +2,8 @@
 
 from uuid import UUID
 
-from litestar import Controller, Request, delete, get, post, put
-from litestar.datastructures import State
+from litestar import Controller, Request, Response, delete, get, post, put
+from litestar.datastructures import Cookie, State
 from litestar.dto import DTOData
 from litestar.exceptions import NotFoundException, ValidationException
 from litestar.params import Parameter
@@ -19,6 +19,7 @@ from src.application.services.user_service import UserService
 from src.domain.entities.user import User
 from src.domain.exceptions.user import EmailSyntaxError
 from src.domain.value_objects.cursor import Page
+from src.infra.config import Config
 
 
 class UserController(Controller):
@@ -87,15 +88,39 @@ class UserController(Controller):
     @delete(
         path="/delete",
         status_code=HTTP_204_NO_CONTENT,
-        response_cookies={"token": ""},
-        response_headers={},
     )
     async def delete_user(
         self, request: Request[User, str, State], container: Container
-    ) -> None:
+    ) -> Response[None]:
         """Удаление информации о пользователе"""
         user_service = container.resolve(UserService)
+        config: Config = container.resolve(Config)
         await user_service.delete_user(request.user.id)
+
+        samesite = "lax" if config.debug else "none"
+        secure = not config.debug
+
+        return Response(
+            None,
+            cookies=[
+                Cookie(
+                    key="access_token",
+                    value="",
+                    httponly=True,
+                    samesite=samesite,
+                    secure=secure,
+                    max_age=0,
+                ),
+                Cookie(
+                    key="refresh_token",
+                    value="",
+                    httponly=True,
+                    samesite=samesite,
+                    secure=secure,
+                    max_age=0,
+                ),
+            ],
+        )
 
     @post(
         path="/posts/save/{post_id:uuid}",
