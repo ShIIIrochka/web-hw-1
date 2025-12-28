@@ -9,7 +9,6 @@ from contextlib import asynccontextmanager
 from litestar import Litestar
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.spec import Components, SecurityScheme
-from litestar.plugins.prometheus import PrometheusConfig, PrometheusController
 
 from src.api.routers import routers
 from src.infra.container import container_builder
@@ -55,16 +54,11 @@ async def lifespan(app: Litestar):
     await db_provider.close()
 
 
-prometheus_config = PrometheusConfig(
-    app_name="blog_api",
-    excluded_http_methods=["OPTIONS"],
-)
-
 app = Litestar(
-    route_handlers=[routers, PrometheusController],
+    route_handlers=[routers],
     debug=True,
     dependencies={"container": lambda: container},
-    middleware=[*middlewares, prometheus_config.middleware],
+    middleware=[*middlewares],
     openapi_config=openapi_config,
     lifespan=[lifespan],
 )
