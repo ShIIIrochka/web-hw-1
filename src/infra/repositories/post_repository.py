@@ -114,3 +114,28 @@ class PostRepository(BasePostRepository):
         """Удаление объекта."""
         deleted_count = await self._model.filter(id=id).delete()
         return deleted_count > 0
+
+    async def get_posts_by_authors(
+        self, author_ids: list[UUID], cursor_id: UUID | None, limit: int
+    ) -> list[Post]:
+        """Получение постов по списку авторов с cursor-offset пагинацией.
+
+        Args:
+            author_ids (list[UUID]): Список ID авторов
+            cursor_id (UUID | None): ID курсора для пагинации
+            limit (int): Количество постов
+
+        Returns:
+            list[Post]: Список постов
+        """
+        if not author_ids:
+            return []
+
+        query = self._model.filter(author_id__in=author_ids)
+
+        if cursor_id:
+            query = query.filter(id__lt=cursor_id)
+
+        posts = await query.order_by("-created_at", "-id").limit(limit)
+
+        return [await post.to_entity() for post in posts]

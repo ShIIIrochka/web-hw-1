@@ -134,3 +134,37 @@ class BaseUserRepository(ABC):
             list[UUID]: Список ID лайкнутых категорий
         """
         raise NotImplementedError
+
+    @abstractmethod
+    async def follow_user(self, follower_id: UUID, following_id: UUID) -> None:
+        """Подписаться на пользователя.
+
+        Args:
+            follower_id (UUID): ID подписчика
+            following_id (UUID): ID пользователя, на которого подписываются
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def unfollow_user(
+        self, follower_id: UUID, following_id: UUID
+    ) -> None:
+        """Отписаться от пользователя.
+
+        Args:
+            follower_id (UUID): ID подписчика
+            following_id (UUID): ID пользователя, от которого отписываются
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_following_ids(self, user_id: UUID) -> list[UUID]:
+        """Получение списка ID пользователей, на которых подписан пользователь.
+
+        Args:
+            user_id (UUID): ID пользователя
+
+        Returns:
+            list[UUID]: Список ID пользователей
+        """
+        raise NotImplementedError

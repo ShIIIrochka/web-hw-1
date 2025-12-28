@@ -129,3 +129,40 @@ class UserRepository(BaseUserRepository):
             liked_by__id=user_id
         ).all()
         return [category.id for category in categories]
+
+    async def follow_user(self, follower_id: UUID, following_id: UUID) -> None:
+        """Подписаться на пользователя.
+
+        Args:
+            follower_id (UUID): ID подписчика
+            following_id (UUID): ID пользователя, на которого подписываются
+        """
+        follower = await self._model.get(id=follower_id)
+        following = await self._model.get(id=following_id)
+        await follower.following.add(following)
+
+    async def unfollow_user(
+        self, follower_id: UUID, following_id: UUID
+    ) -> None:
+        """Отписаться от пользователя.
+
+        Args:
+            follower_id (UUID): ID подписчика
+            following_id (UUID): ID пользователя, от которого отписываются
+        """
+        follower = await self._model.get(id=follower_id)
+        following = await self._model.get(id=following_id)
+        await follower.following.remove(following)
+
+    async def get_following_ids(self, user_id: UUID) -> list[UUID]:
+        """Получение списка ID пользователей, на которых подписан пользователь.
+
+        Args:
+            user_id (UUID): ID пользователя
+
+        Returns:
+            list[UUID]: Список ID пользователей
+        """
+        user = await self._model.get(id=user_id)
+        await user.fetch_related("following")
+        return [following_user.id for following_user in user.following]

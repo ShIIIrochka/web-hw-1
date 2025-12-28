@@ -49,3 +49,19 @@ class BasePostRepository(ABC):
     ) -> list[Post]:
         """Получение объектов с пагинацией."""
         raise NotImplementedError
+
+    @abstractmethod
+    async def get_posts_by_authors(
+        self, author_ids: list[UUID], cursor_id: UUID | None, limit: int
+    ) -> list[Post]:
+        """Получение постов по списку авторов с пагинацией.
+
+        Args:
+            author_ids (list[UUID]): Список ID авторов
+            cursor_id (UUID | None): ID курсора для пагинации
+            limit (int): Количество постов
+
+        Returns:
+            list[Post]: Список постов
+        """
+        raise NotImplementedError

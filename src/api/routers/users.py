@@ -14,6 +14,7 @@ from src.api.dto.pagination import PaginatedResponseDTO
 from src.api.dto.posts import PostDTO
 from src.api.dto.users import UpdateUserDTO, UserDTO
 from src.api.guards.auth import auth_guard
+from src.application.services.post_service import PostService
 from src.application.services.user_service import UserService
 from src.domain.entities.user import User
 from src.domain.exceptions.user import EmailSyntaxError
@@ -172,12 +173,50 @@ class UserController(Controller):
         )
         return liked_categories
 
+    @post(
+        path="/follow/{user_id:uuid}",
+        status_code=HTTP_204_NO_CONTENT,
+        security=[{"BearerAuth": []}],
+    )
+    async def follow_user(
+        self,
+        user_id: UUID,
+        request: Request[User, str, State],
+        container: Container,
+    ) -> None:
+        """Подписаться на пользователя."""
+        user_service = container.resolve(UserService)
+        try:
+            await user_service.follow_user(request.user.id, user_id)
+        except ValueError as e:
+            raise ValidationException(detail=str(e))
+        except Exception:
+            raise NotFoundException(detail="User not found")
+
+    @delete(
+        path="/unfollow/{user_id:uuid}",
+        status_code=HTTP_204_NO_CONTENT,
+        security=[{"BearerAuth": []}],
+    )
+    async def unfollow_user(
+        self,
+        user_id: UUID,
+        request: Request[User, str, State],
+        container: Container,
+    ) -> None:
+        """Отписаться от пользователя."""
+        user_service = container.resolve(UserService)
+        try:
+            await user_service.unfollow_user(request.user.id, user_id)
+        except Exception:
+            raise NotFoundException(detail="User not found")
+
     @get(
-        "/feed",
+        "/personalized-feed",
         status_code=HTTP_200_OK,
         return_dto=PaginatedResponseDTO,
     )
-    async def get_feed(
+    async def get_personalized_feed(
         self,
         request: Request[User, str, State],
         container: Container,
@@ -198,6 +237,38 @@ class UserController(Controller):
         post_service: UserService = container.resolve(UserService)
         try:
             page = await post_service.get_feed(request.user.id, cursor, limit)
+            return page
+        except ValueError as e:
+            raise NotFoundException(detail=str(e))
+
+    @get(
+        "/feed",
+        status_code=HTTP_200_OK,
+        return_dto=PaginatedResponseDTO,
+    )
+    async def get_feed(
+        self,
+        container: Container,
+        request: Request[User, str, State],
+        cursor: UUID | None = Parameter(
+            default=None,
+            query="cursor",
+            description="Cursor for pagination",
+        ),
+        limit: int = Parameter(
+            default=10,
+            query="limit",
+            ge=1,
+            le=100,
+            description="Number of posts per page",
+        ),
+    ) -> Page:
+        """Получение ленты постов от подписанных авторов с cursor-offset пагинацией."""
+        post_service: PostService = container.resolve(PostService)
+        try:
+            page = await post_service.get_feed_posts(
+                request.user, cursor, limit
+            )
             return page
         except ValueError as e:
             raise NotFoundException(detail=str(e))

@@ -199,6 +199,46 @@ class UserService:
         """
         return await self._repo.get_liked_categories(user_id)
 
+    async def follow_user(self, follower_id: UUID, following_id: UUID) -> None:
+        """Подписаться на пользователя.
+
+        Args:
+            follower_id (UUID): ID подписчика
+            following_id (UUID): ID пользователя, на которого подписываются
+
+        Raises:
+            ValueError: Если пользователь пытается подписаться на себя
+            UserNotFoundError: Если пользователь не найден
+        """
+        if follower_id == following_id:
+            raise ValueError("Cannot follow yourself")
+
+        # Проверка существования пользователя
+        following_user = await self._repo.get_by_id(str(following_id))
+        if not following_user:
+            raise UserNotFoundError
+
+        await self._repo.follow_user(follower_id, following_id)
+
+    async def unfollow_user(
+        self, follower_id: UUID, following_id: UUID
+    ) -> None:
+        """Отписаться от пользователя.
+
+        Args:
+            follower_id (UUID): ID подписчика
+            following_id (UUID): ID пользователя, от которого отписываются
+
+        Raises:
+            UserNotFoundError: Если пользователь не найден
+        """
+        # Проверка существования пользователя
+        following_user = await self._repo.get_by_id(str(following_id))
+        if not following_user:
+            raise UserNotFoundError
+
+        await self._repo.unfollow_user(follower_id, following_id)
+
     async def get_feed(
         self, user_id: UUID, cursor: UUID | None = None, limit: int = 10
     ) -> Page:

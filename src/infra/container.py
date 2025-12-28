@@ -116,6 +116,7 @@ def container_builder() -> Container:
             repository=container.resolve("PostRepo"),
             search_repository=container.resolve("SearchRepo"),
             cache_provider=container.resolve(CacheProvider),
+            user_repository=container.resolve("UserRepo"),
         ),
     )
 

@@ -14,6 +14,7 @@ from src.domain.repositories.post_repository import BasePostRepository
 from src.domain.repositories.post_search_repository import (
     BasePostSearchRepository,
 )
+from src.domain.repositories.user_repository import BaseUserRepository
 from src.domain.value_objects.cursor import Page
 from src.infra.providers.interfaces import CacheProvider
 
@@ -26,6 +27,7 @@ class PostService:
         repository: BasePostRepository,
         search_repository: BasePostSearchRepository,
         cache_provider: CacheProvider,
+        user_repository: BaseUserRepository,
     ) -> None:
         """Конструктор.
 
@@ -33,10 +35,12 @@ class PostService:
             repository (BasePostRepository): Репозиторий для работы с постами
             search_repository (BasePostSearchRepository): Репозиторий для поиска и индексации постов
             cache_provider (CacheProvider): Провайдер кеширования
+            user_repository (BaseUserRepository): Репозиторий для работы с пользователями
         """
         self._repo = repository
         self._search_repo = search_repository
         self._cache = cache_provider
+        self._user_repo = user_repository
 
     async def get_post_by_id(self, post_id: UUID) -> Post:
         """Получение поста по ID.
@@ -169,6 +173,46 @@ class PostService:
         """
 
         posts = await self._repo.get_paginated(
+            cursor_id=cursor,
+            limit=limit + 1,
+        )
+
+        has_more = len(posts) > limit
+        next_cursor = None
+        if has_more:
+            posts = posts[:limit]
+            next_cursor = posts[-1].id
+
+        return Page(
+            items=posts,
+            next_cursor=next_cursor,
+            has_more=has_more,
+        )
+
+    async def get_feed_posts(
+        self, user: User, cursor: UUID | None, limit: int = 10
+    ) -> Page:
+        """Получение ленты постов от подписанных авторов с cursor-offset пагинацией.
+
+        Args:
+            user (User): Текущий пользователь
+            cursor (UUID | None): Курсор для пагинации
+            limit (int): Количество постов на странице
+
+        Returns:
+            Page с постами и next_cursor
+        """
+        following_ids = await self._user_repo.get_following_ids(user.id)
+
+        if not following_ids:
+            return Page(
+                items=[],
+                next_cursor=None,
+                has_more=False,
+            )
+
+        posts = await self._repo.get_posts_by_authors(
+            author_ids=following_ids,
             cursor_id=cursor,
             limit=limit + 1,
         )
