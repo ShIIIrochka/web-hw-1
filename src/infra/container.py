@@ -7,6 +7,7 @@ from punq import Container
 
 from src.application.services.auth_service import AuthService
 from src.application.services.category_service import CategoryService
+from src.application.services.comment_service import CommentService
 from src.application.services.post_search_service import PostSearchService
 from src.application.services.post_service import PostService
 from src.application.services.user_service import UserService
@@ -21,6 +22,7 @@ from src.infra.providers.interfaces import (
 from src.infra.providers.jwt import JWTProvider
 from src.infra.providers.opensearch import OpenSearchClientProvider
 from src.infra.repositories.category_repository import CategoryRepository
+from src.infra.repositories.comment_repository import CommentRepository
 from src.infra.repositories.post_repository import PostRepository
 from src.infra.repositories.post_search_repository import (
     PostSearchRepository,
@@ -82,6 +84,7 @@ def container_builder() -> Container:
     container.register("UserRepo", factory=lambda: UserRepository())
     container.register("PostRepo", factory=lambda: PostRepository())
     container.register("CategoryRepo", factory=lambda: CategoryRepository())
+    container.register("CommentRepo", factory=lambda: CommentRepository())
 
     container.register(
         AuthService,
@@ -119,6 +122,14 @@ def container_builder() -> Container:
         PostSearchService,
         factory=lambda: PostSearchService(
             search_repository=container.resolve("SearchRepo"),
+        ),
+    )
+
+    container.register(
+        CommentService,
+        factory=lambda: CommentService(
+            comment_repository=container.resolve("CommentRepo"),
+            post_repository=container.resolve("PostRepo"),
         ),
     )
 
