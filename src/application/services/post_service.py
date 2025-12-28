@@ -10,8 +10,10 @@ from src.domain.entities.post import Post
 from src.domain.entities.user import User
 from src.domain.exceptions.category import CategoryNotFoundError
 from src.domain.exceptions.post import PostNotFoundError, PostPermissionError
-from src.domain.repositories.outbox_repository import BaseOutboxRepository
 from src.domain.repositories.post_repository import BasePostRepository
+from src.domain.repositories.post_search_repository import (
+    BasePostSearchRepository,
+)
 from src.domain.value_objects.cursor import Page
 
 
@@ -21,16 +23,16 @@ class PostService:
     def __init__(
         self,
         repository: BasePostRepository,
-        outbox_repository: BaseOutboxRepository,
+        search_repository: BasePostSearchRepository,
     ) -> None:
         """Конструктор.
 
         Args:
             repository: Репозиторий для работы с постами
-            outbox_repository: Репозиторий для outbox событий
+            search_repository: Репозиторий для поиска и индексации постов
         """
         self._repo = repository
-        self._outbox = outbox_repository
+        self._search_repo = search_repository
 
     async def get_post_by_id(self, post_id: UUID) -> Post:
         """Получение поста по ID.
@@ -89,21 +91,7 @@ class PostService:
             await self._repo.add(post)
         except ValueError:
             raise CategoryNotFoundError
-
-        await self._outbox.add_event(
-            aggregate_type="post",
-            aggregate_id=post.id,
-            event_type="post.created",
-            payload={
-                "id": str(post.id),
-                "title": post.title,
-                "content": post.content,
-                "author_id": str(post.author_id),
-                "created_at": post.created_at.isoformat(),
-                "updated_at": post.updated_at.isoformat(),
-            },
-        )
-
+        await self._search_repo.index(post)
         return post
 
     async def update_post(
@@ -132,19 +120,7 @@ class PostService:
         )
         await self._repo.update(post.id, updated_post)
 
-        await self._outbox.add_event(
-            aggregate_type="post",
-            aggregate_id=updated_post.id,
-            event_type="post.updated",
-            payload={
-                "id": str(updated_post.id),
-                "title": updated_post.title,
-                "content": updated_post.content,
-                "author_id": str(updated_post.author_id),
-                "created_at": updated_post.created_at.isoformat(),
-                "updated_at": updated_post.updated_at.isoformat(),
-            },
-        )
+        await self._search_repo.update(updated_post)
 
         return updated_post
 
@@ -164,12 +140,7 @@ class PostService:
 
         result = await self._repo.delete(post.id)
 
-        await self._outbox.add_event(
-            aggregate_type="post",
-            aggregate_id=post.id,
-            event_type="post.deleted",
-            payload={"id": str(post.id)},
-        )
+        await self._search_repo.delete(post.id)
 
         return result
 

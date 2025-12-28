@@ -24,7 +24,6 @@ from src.infra.providers.interfaces import (
 from src.infra.providers.jwt import JWTProvider
 from src.infra.providers.opensearch import OpenSearchClientProvider
 from src.infra.repositories.category_repository import CategoryRepository
-from src.infra.repositories.outbox_repository import OutboxRepository
 from src.infra.repositories.post_repository import PostRepository
 from src.infra.repositories.post_search_repository import (
     PostSearchRepository,
@@ -84,7 +83,6 @@ def container_builder() -> Container:
     container.register("UserRepo", factory=lambda: UserRepository())
     container.register("PostRepo", factory=lambda: PostRepository())
     container.register("CategoryRepo", factory=lambda: CategoryRepository())
-    container.register("OutboxRepo", factory=lambda: OutboxRepository())
 
     container.register(
         AuthService,
@@ -113,7 +111,7 @@ def container_builder() -> Container:
         PostService,
         factory=lambda: PostService(
             repository=container.resolve("PostRepo"),
-            outbox_repository=container.resolve("OutboxRepo"),
+            search_repository=container.resolve(BasePostSearchRepository),
         ),
     )
 

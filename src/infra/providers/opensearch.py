@@ -64,11 +64,11 @@ class OpenSearchClientProvider:
                             "id": {"type": "keyword"},
                             "title": {
                                 "type": "text",
-                                "analyzer": "standard",
+                                "analyzer": "english",
                             },
                             "content": {
                                 "type": "text",
-                                "analyzer": "standard",
+                                "analyzer": "english",
                             },
                             "author_id": {"type": "keyword"},
                             "created_at": {"type": "date"},

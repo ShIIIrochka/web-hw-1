@@ -7,15 +7,14 @@ import os
 from contextlib import asynccontextmanager
 
 from litestar import Litestar
-
-# from litestar.contrib.prometheus import PrometheusConfig, PrometheusController
 from litestar.openapi.config import OpenAPIConfig
 from litestar.openapi.spec import Components, SecurityScheme
+from litestar.plugins.prometheus import PrometheusConfig, PrometheusController
 
 from src.api.routers import routers
 from src.infra.container import container_builder
 from src.infra.logging import setup_logging
-from src.infra.providers.interfaces import CacheProvider, DBProvider
+from src.infra.providers.interfaces import DBProvider
 from src.infra.providers.opensearch import OpenSearchClientProvider
 from src.middlewares import middlewares
 
@@ -45,33 +44,29 @@ container = container_builder()
 async def lifespan(app: Litestar):
     container = app.state.container
     db_provider = container.resolve(DBProvider)
-    cache_provider = container.resolve(CacheProvider)
     opensearch_provider = container.resolve(OpenSearchClientProvider)
 
     await db_provider.init()
-    await cache_provider.init()
     await opensearch_provider.init()
 
     yield
 
     await opensearch_provider.close()
-    await cache_provider.close()
     await db_provider.close()
 
 
-# prometheus_config = PrometheusConfig(
-#     app_name="blog_api",
-#     excluded_http_methods=["OPTIONS"],
-# )
+prometheus_config = PrometheusConfig(
+    app_name="blog_api",
+    excluded_http_methods=["OPTIONS"],
+)
 
 app = Litestar(
-    route_handlers=[routers],
+    route_handlers=[routers, PrometheusController],
     debug=True,
     dependencies={"container": lambda: container},
-    middleware=[*middlewares],
+    middleware=[*middlewares, prometheus_config.middleware],
     openapi_config=openapi_config,
     lifespan=[lifespan],
-    # plugins=[PrometheusController],
 )
 
 app.state.container = container
