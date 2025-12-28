@@ -2,6 +2,7 @@
 
 from litestar import Router
 
+from src.api.routers.admin import AdminController
 from src.api.routers.auth import AuthController
 from src.api.routers.categories import CategoryController
 from src.api.routers.comments import CommentController
@@ -17,5 +18,6 @@ routers = Router(
         PostController,
         CategoryController,
         CommentController,
+        AdminController,
     ],
 )

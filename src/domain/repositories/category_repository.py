@@ -27,3 +27,12 @@ class BaseCategoryRepository(ABC):
     async def get_many(self, cursor: UUID | None, limit: int) -> list[Category]:
         """Получение нескольких объектов."""
         raise NotImplementedError
+
+    @abstractmethod
+    async def delete(self, id: UUID) -> bool:
+        """Удаление объекта.
+
+        Returns:
+            bool: True если объект удален, False если не найден
+        """
+        raise NotImplementedError

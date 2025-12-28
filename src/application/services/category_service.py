@@ -58,3 +58,20 @@ class CategoryService:
         if not category:
             raise CategoryNotFoundError
         return category
+
+    async def delete_category(self, id: UUID) -> bool:
+        """Удаление категории.
+
+        Args:
+            id (UUID): ID категории
+
+        Returns:
+            bool: Статус удаления
+
+        Raises:
+            CategoryNotFoundError: Если категория не найдена
+        """
+        category = await self._repo.get_by_id(id)
+        if not category:
+            raise CategoryNotFoundError
+        return await self._repo.delete(id)
