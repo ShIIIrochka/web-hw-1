@@ -61,6 +61,17 @@ class CommentRepository(BaseCommentRepository):
         return await comment.to_entity()
 
     async def delete(self, id: UUID) -> bool:
-        """Удаление комментария."""
+        """Удаление комментария.
+
+        Перед удалением комментария все дочерние комментарии обновляются,
+        чтобы их parent_comment_id был установлен в NULL. Это предотвращает
+        каскадное удаление дочерних комментариев.
+        """
+        # Обновляем все дочерние комментарии, устанавливая parent_comment_id в NULL
+        await self._model.filter(parent_comment_id=id).update(
+            parent_comment_id=None
+        )
+
+        # Удаляем сам комментарий
         deleted_count = await self._model.filter(id=id).delete()
         return deleted_count > 0

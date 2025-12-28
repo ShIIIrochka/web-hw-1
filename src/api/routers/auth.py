@@ -46,9 +46,12 @@ class AuthController(Controller):
             user = await user_service.create_user(data)
         except EmailSyntaxError:
             raise ValidationException(detail="Invalid email format.")
+        except ValueError:
+            raise ValidationException(
+                detail="User with this amil already exists"
+            )
         tokens = await auth_service.auth_user(user)
 
-        # Use 'lax' for dev (localhost), 'none' for prod with HTTPS
         samesite = "lax" if config.debug else "none"
         secure = not config.debug
 

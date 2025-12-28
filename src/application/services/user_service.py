@@ -4,6 +4,7 @@ from uuid import UUID
 
 from email_validator import validate_email
 from litestar.dto import DTOData
+from tortoise.exceptions import IntegrityError
 
 from src.domain.entities.post import Post
 from src.domain.entities.user import User
@@ -95,7 +96,10 @@ class UserService:
             login=user.login,
             password=user.password,
         )
-        await self._repo.add(user)
+        try:
+            await self._repo.add(user)
+        except IntegrityError:
+            raise ValueError
         return user
 
     async def update_user(self, user: User, update_data: DTOData[User]) -> User:
@@ -122,6 +126,8 @@ class UserService:
         )
         try:
             await self._repo.update(updated_user.id, updated_user)
+        except IntegrityError:
+            raise ValueError
         except ValueError:
             raise UserNotFoundError
         return user

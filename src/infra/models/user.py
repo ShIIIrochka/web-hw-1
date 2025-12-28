@@ -15,6 +15,7 @@ class User(models.Model):
     password = fields.CharField(max_length=255)
     created_at = fields.DatetimeField(default=datetime.now)
     updated_at = fields.DatetimeField(default=datetime.now)
+    is_admin = fields.BooleanField(default=False)
     posts: fields.ReverseRelation["Post"]
     saved_posts: fields.ManyToManyRelation[Post]
     followers: fields.ManyToManyRelation["User"] = fields.ManyToManyField(
@@ -36,6 +37,7 @@ class User(models.Model):
             email=self.email,
             login=self.login,
             password=self.password,
+            is_admin=self.is_admin,
             created_at=self.created_at,
             updated_at=self.updated_at,
         )

@@ -83,6 +83,10 @@ class UserController(Controller):
             updated_user = await user_service.update_user(request.user, data)
         except EmailSyntaxError:
             raise ValidationException(detail="Invalid email format.")
+        except ValueError:
+            raise ValidationException(
+                detail="User with this amil already exists"
+            )
         return updated_user
 
     @delete(
