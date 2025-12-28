@@ -15,6 +15,7 @@ from src.domain.repositories.post_search_repository import (
     BasePostSearchRepository,
 )
 from src.domain.value_objects.cursor import Page
+from src.infra.providers.interfaces import CacheProvider
 
 
 class PostService:
@@ -24,15 +25,18 @@ class PostService:
         self,
         repository: BasePostRepository,
         search_repository: BasePostSearchRepository,
+        cache_provider: CacheProvider,
     ) -> None:
         """Конструктор.
 
         Args:
-            repository: Репозиторий для работы с постами
-            search_repository: Репозиторий для поиска и индексации постов
+            repository (BasePostRepository): Репозиторий для работы с постами
+            search_repository (BasePostSearchRepository): Репозиторий для поиска и индексации постов
+            cache_provider (CacheProvider): Провайдер кеширования
         """
         self._repo = repository
         self._search_repo = search_repository
+        self._cache = cache_provider
 
     async def get_post_by_id(self, post_id: UUID) -> Post:
         """Получение поста по ID.
@@ -92,6 +96,9 @@ class PostService:
         except ValueError:
             raise CategoryNotFoundError
         await self._search_repo.index(post)
+
+        await self._cache.delete_pattern("search:query:*")
+
         return post
 
     async def update_post(
@@ -122,6 +129,8 @@ class PostService:
 
         await self._search_repo.update(updated_post)
 
+        await self._cache.delete_pattern("search:query:*")
+
         return updated_post
 
     async def delete_post(self, user: User, post: Post) -> bool:
@@ -141,6 +150,8 @@ class PostService:
         result = await self._repo.delete(post.id)
 
         await self._search_repo.delete(post.id)
+
+        await self._cache.delete_pattern("search:query:*")
 
         return result
 

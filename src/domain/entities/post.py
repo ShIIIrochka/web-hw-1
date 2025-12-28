@@ -92,7 +92,6 @@ class Post(BaseModel):
 
     @classmethod
     def from_row(cls, row: dict) -> Post:
-        row = row["_source"]
         return cls(
             id=UUID(row["id"]),
             title=row["title"],

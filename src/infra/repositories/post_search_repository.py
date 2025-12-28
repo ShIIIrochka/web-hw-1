@@ -52,7 +52,7 @@ class PostSearchRepository(BasePostSearchRepository):
         )
 
         hits_data = result.get("hits", {}).get("hits", [])
-        return [Post.from_row(hit) for hit in hits_data]
+        return [Post.from_row(hit["_source"]) for hit in hits_data]
 
     async def index(self, post: Post) -> None:
         """Индексация поста.
@@ -135,4 +135,4 @@ class PostSearchRepository(BasePostSearchRepository):
         result = await self._provider.search(body=body)
         hits_data = result.get("hits", {}).get("hits", [])
 
-        return [Post.from_row(hit) for hit in hits_data]
+        return [Post.from_row(hit["_source"]) for hit in hits_data]

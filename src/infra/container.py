@@ -115,6 +115,7 @@ def container_builder() -> Container:
         factory=lambda: PostService(
             repository=container.resolve("PostRepo"),
             search_repository=container.resolve("SearchRepo"),
+            cache_provider=container.resolve(CacheProvider),
         ),
     )
 
@@ -122,6 +123,9 @@ def container_builder() -> Container:
         PostSearchService,
         factory=lambda: PostSearchService(
             search_repository=container.resolve("SearchRepo"),
+            cache_provider=container.resolve(CacheProvider),
+            popularity_threshold=config.search_cache_popularity_threshold,
+            cache_ttl=config.search_cache_ttl_seconds,
         ),
     )
 

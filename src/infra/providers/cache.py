@@ -53,3 +53,20 @@ class RedisCacheProvider(CacheProvider):
             await self.set(version_key, "1", ttl=None)
             return 1
         return int(version)
+
+    async def delete_pattern(self, pattern: str) -> int:
+        """Удаление ключей по паттерну.
+
+        Args:
+            pattern: Паттерн для поиска ключей (например, "search:query:*")
+
+        Returns:
+            Количество удаленных ключей
+        """
+        keys = []
+        async for key in self._client.scan_iter(match=pattern):
+            keys.append(key)
+
+        if keys:
+            return await self._client.delete(*keys)
+        return 0

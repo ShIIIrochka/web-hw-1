@@ -52,6 +52,23 @@ class CacheProvider(ABC):
         """Удаление значения из кэша."""
         raise NotImplementedError
 
+    @abstractmethod
+    async def incr(self, key: str) -> int:
+        """Инкремент значения."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def delete_pattern(self, pattern: str) -> int:
+        """Удаление ключей по паттерну.
+
+        Args:
+            pattern: Паттерн для поиска ключей (например, "search:query:*")
+
+        Returns:
+            Количество удаленных ключей
+        """
+        raise NotImplementedError
+
 
 class SearchProvider(ABC):
     """Провайдер для полнотекстового поиска."""

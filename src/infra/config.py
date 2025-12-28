@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*2-
+# -*- coding: utf-8 -*-
 
 from __future__ import annotations
 
@@ -15,6 +15,8 @@ class Config:
     opensearch_uri: str
     redis_uri: str
     cache_ttl_seconds: int = 60
+    search_cache_popularity_threshold: int = 10
+    search_cache_ttl_seconds: int = 300
     access_exp: int = 15 * 60
     refresh_exp: int = 7 * 24 * 60 * 60
 
@@ -33,6 +35,9 @@ class Config:
             secret_key=os.getenv("SECRET_KEY", "test"),
             redis_uri=redis_uri,
             cache_ttl_seconds=int(os.getenv("CACHE_TTL_SECONDS", "60")),
+            search_cache_popularity_threshold=int(
+                os.getenv("CACHE_POPULARITY_THRESHOLD", "10")
+            ),
             opensearch_uri=elastic_uri,
         )
 
