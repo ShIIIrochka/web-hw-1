@@ -29,7 +29,7 @@ services:
     image: opensearchproject/opensearch:3.3.2
     environment:
       - OPENSEARCH_USERNAME=admin
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=pbWlZ&ys9cXY
+      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=pbWlZ&ys9cXY"
       - discovery.type=single-node
     ports:
       - "9200:9200"
