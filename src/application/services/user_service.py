@@ -210,16 +210,11 @@ class UserService:
             limit (int): Количество постов на странице
 
         Returns:
-            Page с персонализированными постами
+            Page: Страница с персонализированными постами
         """
         liked_categories = await self._repo.get_liked_categories(user_id)
-        saved_category_ids = await self._repo.get_saved_posts_category_ids(
-            user_id
-        )
-
         posts = await self._search_repo.feed(
             liked_categories=liked_categories,
-            saved_categories=saved_category_ids,
             limit=limit + 1,
             cursor=cursor,
         )

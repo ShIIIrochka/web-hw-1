@@ -91,7 +91,6 @@ class PostSearchRepository(BasePostSearchRepository):
     async def feed(
         self,
         liked_categories: list[UUID],
-        saved_categories: list[UUID],
         limit: int = 10,
         cursor: UUID | None = None,
     ) -> list[Post]:
@@ -109,7 +108,7 @@ class PostSearchRepository(BasePostSearchRepository):
         if cursor:
             body["search_after"] = str(cursor)
 
-        if not liked_categories and not saved_categories:
+        if not liked_categories:
             body["query"] = {"match_all": {}}
         else:
             should_clauses = []
@@ -125,19 +124,6 @@ class PostSearchRepository(BasePostSearchRepository):
                         }
                     }
                 )
-
-            for cat_id in saved_categories:
-                if cat_id not in liked_categories:
-                    should_clauses.append(
-                        {
-                            "term": {
-                                "categories": {
-                                    "value": str(cat_id),
-                                    "boost": 1.0,
-                                }
-                            }
-                        }
-                    )
 
             body["query"] = {
                 "bool": {

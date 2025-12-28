@@ -129,17 +129,3 @@ class UserRepository(BaseUserRepository):
             liked_by__id=user_id
         ).all()
         return [category.id for category in categories]
-
-    async def get_saved_posts_category_ids(self, user_id: UUID) -> list[UUID]:
-        """Получение ID категорий из сохранённых постов пользователя.
-
-        Args:
-            user_id (UUID): ID пользователя
-
-        Returns:
-            list[UUID]: Список уникальных ID категорий
-        """
-        category_ids = await self._category_model.filter(
-            posts__saved_by__id=user_id
-        ).values_list("id", flat=True)
-        return category_ids

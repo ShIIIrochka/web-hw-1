@@ -100,4 +100,5 @@ class Post(BaseModel):
             author_id=UUID(row["author_id"]),
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),
+            categories=[UUID(cat) for cat in row["categories"]],
         )

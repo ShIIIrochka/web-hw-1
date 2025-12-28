@@ -58,7 +58,6 @@ class BasePostSearchRepository(ABC):
     async def feed(
         self,
         liked_categories: list[UUID],
-        saved_categories: list[UUID],
         limit: int = 10,
         cursor: UUID | None = None,
     ) -> list[Post]:
@@ -66,7 +65,6 @@ class BasePostSearchRepository(ABC):
 
         Args:
             liked_categories (list[UUID]): Список ID лайкнутых категорий
-            saved_categories (list[UUID]): Список ID категорий из сохранённых постов
             limit (int): Количество результатов
             cursor (UUID | None): ID последнего поста для cursor пагинации
 

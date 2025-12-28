@@ -134,17 +134,3 @@ class BaseUserRepository(ABC):
             list[UUID]: Список ID лайкнутых категорий
         """
         raise NotImplementedError
-
-    @abstractmethod
-    async def get_saved_posts_category_ids(self, user_id: UUID) -> list[UUID]:
-        """Получение ID категорий из сохранённых постов пользователя.
-
-        Оптимизированный метод для получения только ID категорий без загрузки постов.
-
-        Args:
-            user_id (UUID): ID пользователя
-
-        Returns:
-            list[UUID]: Список уникальных ID категорий
-        """
-        raise NotImplementedError
