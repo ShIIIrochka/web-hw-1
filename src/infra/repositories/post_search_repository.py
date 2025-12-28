@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from uuid import UUID
 
 from src.domain.entities.post import Post
 from src.domain.repositories.post_search_repository import (
     BasePostSearchRepository,
 )
-from src.domain.value_objects.search import PostSearchHit, PostSearchResult
 from src.infra.providers.opensearch import OpenSearchClientProvider
 
 
@@ -24,59 +22,18 @@ class PostSearchRepository(BasePostSearchRepository):
         """
         self._provider = client_provider
 
-    @staticmethod
-    def _post_to_document(post: Post) -> dict:
-        """Маппинг Post сущности в документ индекса.
-
-        Args:
-            post: Сущность поста
-
-        Returns:
-            Документ для индексации
-        """
-        return {
-            "id": str(post.id),
-            "title": post.title,
-            "content": post.content,
-            "author_id": str(post.author_id),
-            "created_at": post.created_at.isoformat(),
-            "updated_at": post.updated_at.isoformat(),
-        }
-
-    @staticmethod
-    def _parse_hit(hit: dict) -> PostSearchHit:
-        """Парсинг hit из ответа OpenSearch в domain модель.
-
-        Args:
-            hit: Элемент из hits массива ответа OpenSearch
-
-        Returns:
-            PostSearchHit VO
-        """
-        source = hit["_source"]
-        return PostSearchHit(
-            post_id=UUID(source["id"]),
-            title=source["title"],
-            content=source["content"],
-            author_id=UUID(source["author_id"]),
-            created_at=datetime.fromisoformat(source["created_at"]),
-            updated_at=datetime.fromisoformat(source["updated_at"]),
-            score=hit["_score"],
-            highlight=hit.get("highlight", {}),
-        )
-
     async def search(
         self, query: str, limit: int = 10, offset: int = 0
-    ) -> PostSearchResult:
+    ) -> list[Post]:
         """Поиск постов по запросу.
 
         Args:
-            query: Поисковый запрос
-            limit: Количество результатов
-            offset: Смещение для пагинации
+            query (str): Поисковый запрос
+            limit (int): Количество результатов
+            offset (int): Смещение для пагинации
 
         Returns:
-            PostSearchResult с результатами поиска
+            list[Post]: Результат поиска
         """
 
         result = await self._provider.search(
@@ -88,12 +45,6 @@ class PostSearchRepository(BasePostSearchRepository):
                         "type": "best_fields",
                     }
                 },
-                "highlight": {
-                    "fields": {
-                        "title": {},
-                        "content": {"fragment_size": 128},
-                    }
-                },
                 "from": offset,
                 "size": limit,
                 "sort": [{"_score": "desc"}, {"created_at": "desc"}],
@@ -101,27 +52,17 @@ class PostSearchRepository(BasePostSearchRepository):
         )
 
         hits_data = result.get("hits", {}).get("hits", [])
-        total = result.get("hits", {}).get("total", {}).get("value", 0)
-
-        hits = [self._parse_hit(hit) for hit in hits_data]
-
-        return PostSearchResult(
-            hits=hits,
-            total=total,
-            limit=limit,
-            offset=offset,
-        )
+        return [Post.from_row(hit) for hit in hits_data]
 
     async def index(self, post: Post) -> None:
         """Индексация поста.
 
         Args:
-            post: Сущность поста для индексации
+            post (Post): Сущность поста для индексации
         """
-        document = self._post_to_document(post)
         await self._provider.index(
             id=str(post.id),
-            body=document,
+            body=post.to_row(),
         )
 
     async def update(self, post: Post) -> None:
@@ -131,10 +72,9 @@ class PostSearchRepository(BasePostSearchRepository):
             post: Сущность поста для обновления
         """
 
-        document = self._post_to_document(post)
         await self._provider.update(
             id=str(post.id),
-            body=document,
+            body=post.to_row(),
         )
 
     async def delete(self, post_id: UUID) -> None:
@@ -148,18 +88,65 @@ class PostSearchRepository(BasePostSearchRepository):
             id=str(post_id),
         )
 
-    async def bulk_index(self, posts: list[Post]) -> None:
-        """Массовая индексация постов.
+    async def feed(
+        self,
+        liked_categories: list[UUID],
+        saved_categories: list[UUID],
+        limit: int = 10,
+        cursor: UUID | None = None,
+    ) -> list[Post]:
+        sort_clause = [
+            {"_score": {"order": "desc"}},
+            {"created_at": {"order": "desc"}},
+            {"id": {"order": "desc"}},
+        ]
 
-        Args:
-            posts: Список постов для индексации
-        """
-        if not posts:
-            return
+        body: dict = {
+            "size": limit,
+            "sort": sort_clause,
+        }
 
-        bulk_body = []
-        for post in posts:
-            bulk_body.append({"index": {"_id": str(post.id)}})
-            bulk_body.append(self._post_to_document(post))
+        if cursor:
+            body["search_after"] = str(cursor)
 
-        await self._provider.bulk(body=bulk_body)
+        if not liked_categories and not saved_categories:
+            body["query"] = {"match_all": {}}
+        else:
+            should_clauses = []
+
+            for cat_id in liked_categories:
+                should_clauses.append(
+                    {
+                        "term": {
+                            "categories": {
+                                "value": str(cat_id),
+                                "boost": 2.0,
+                            }
+                        }
+                    }
+                )
+
+            for cat_id in saved_categories:
+                if cat_id not in liked_categories:
+                    should_clauses.append(
+                        {
+                            "term": {
+                                "categories": {
+                                    "value": str(cat_id),
+                                    "boost": 1.0,
+                                }
+                            }
+                        }
+                    )
+
+            body["query"] = {
+                "bool": {
+                    "should": should_clauses,
+                    "minimum_should_match": 1,
+                }
+            }
+
+        result = await self._provider.search(body=body)
+        hits_data = result.get("hits", {}).get("hits", [])
+
+        return [Post.from_row(hit) for hit in hits_data]

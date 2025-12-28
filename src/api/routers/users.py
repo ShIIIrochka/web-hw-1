@@ -5,16 +5,19 @@ from uuid import UUID
 from litestar import Controller, Request, delete, get, post, put
 from litestar.datastructures import State
 from litestar.dto import DTOData
-from litestar.exceptions import ValidationException
+from litestar.exceptions import NotFoundException, ValidationException
+from litestar.params import Parameter
 from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
 from punq import Container
 
+from src.api.dto.pagination import PaginatedResponseDTO
 from src.api.dto.posts import PostDTO
 from src.api.dto.users import UpdateUserDTO, UserDTO
 from src.api.guards.auth import auth_guard
 from src.application.services.user_service import UserService
 from src.domain.entities.user import User
 from src.domain.exceptions.user import EmailSyntaxError
+from src.domain.value_objects.cursor import Page
 
 
 class UserController(Controller):
@@ -122,3 +125,79 @@ class UserController(Controller):
         """Удаление сохраненного поста пользователем."""
         user_service = container.resolve(UserService)
         await user_service.unsave_post(request.user.id, post_id)
+
+    @post(
+        path="/categories/like/{category_id:uuid}",
+        status_code=HTTP_204_NO_CONTENT,
+        security=[{"BearerAuth": []}],
+    )
+    async def like_category(
+        self,
+        category_id: UUID,
+        request: Request[User, str, State],
+        container: Container,
+    ) -> None:
+        """Лайкнуть категорию пользователем."""
+        user_service = container.resolve(UserService)
+        await user_service.like_category(request.user.id, category_id)
+
+    @delete(
+        path="/categories/unlike/{category_id:uuid}",
+        status_code=HTTP_204_NO_CONTENT,
+        security=[{"BearerAuth": []}],
+    )
+    async def unlike_category(
+        self,
+        category_id: UUID,
+        request: Request[User, str, State],
+        container: Container,
+    ) -> None:
+        """Убрать лайк с категории пользователем."""
+        user_service = container.resolve(UserService)
+        await user_service.unlike_category(request.user.id, category_id)
+
+    @get(
+        path="/categories/liked",
+        status_code=HTTP_200_OK,
+    )
+    async def get_liked_categories(
+        self,
+        request: Request[User, str, State],
+        container: Container,
+    ) -> list[UUID]:
+        """Получение списка лайкнутых категорий пользователя."""
+        user_service = container.resolve(UserService)
+        liked_categories = await user_service.get_liked_categories(
+            request.user.id
+        )
+        return liked_categories
+
+    @get(
+        "/feed",
+        status_code=HTTP_200_OK,
+        return_dto=PaginatedResponseDTO,
+    )
+    async def get_feed(
+        self,
+        request: Request[User, str, State],
+        container: Container,
+        cursor: UUID | None = Parameter(
+            default=None,
+            query="cursor",
+            description="Cursor for pagination",
+        ),
+        limit: int = Parameter(
+            default=10,
+            query="limit",
+            ge=1,
+            le=100,
+            description="Number of posts per page",
+        ),
+    ) -> Page:
+        """Получение персонализированной ленты постов для пользователя."""
+        post_service: UserService = container.resolve(UserService)
+        try:
+            page = await post_service.get_feed(request.user.id, cursor, limit)
+            return page
+        except ValueError as e:
+            raise NotFoundException(detail=str(e))

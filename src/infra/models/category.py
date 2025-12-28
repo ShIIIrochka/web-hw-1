@@ -13,6 +13,7 @@ class Category(models.Model):
     posts: fields.ManyToManyRelation["Post"] = fields.ManyToManyField(  # noqa
         "models.Post", related_name="categories", through="post_categories"
     )
+    liked_by: fields.ManyToManyRelation["User"]  # noqa
     created_at = fields.DatetimeField(default=datetime.now)
     updated_at = fields.DatetimeField(default=datetime.now)
 

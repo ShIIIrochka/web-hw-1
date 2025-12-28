@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from uuid import UUID
 
 from src.domain.entities.post import Post
-from src.domain.value_objects.search import PostSearchResult
 
 
 class BasePostSearchRepository(ABC):
@@ -15,7 +14,7 @@ class BasePostSearchRepository(ABC):
     @abstractmethod
     async def search(
         self, query: str, limit: int = 10, offset: int = 0
-    ) -> PostSearchResult:
+    ) -> list[Post]:
         """Поиск постов по запросу.
 
         Args:
@@ -56,10 +55,22 @@ class BasePostSearchRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def bulk_index(self, posts: list[Post]) -> None:
-        """Массовая индексация постов.
+    async def feed(
+        self,
+        liked_categories: list[UUID],
+        saved_categories: list[UUID],
+        limit: int = 10,
+        cursor: UUID | None = None,
+    ) -> list[Post]:
+        """Персонализированный поиск постов - OpenSearch сам определяет релевантность.
 
         Args:
-            posts: Список постов для индексации
+            liked_categories (list[UUID]): Список ID лайкнутых категорий
+            saved_categories (list[UUID]): Список ID категорий из сохранённых постов
+            limit (int): Количество результатов
+            cursor (UUID | None): ID последнего поста для cursor пагинации
+
+        Returns:
+            list[Post]: Список постов, отсортированных по релевантности
         """
         raise NotImplementedError

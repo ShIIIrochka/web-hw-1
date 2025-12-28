@@ -76,3 +76,28 @@ class Post(BaseModel):
         self.categories = categories
         self.updated_at = datetime.now()
         return self
+
+    def to_row(self) -> dict[str, UUID | str | datetime | list[str]]:
+        return {
+            "id": str(self.id),
+            "title": self.title,
+            "content": self.content,
+            "author_id": str(self.author_id),
+            "categories": [str(cat_id) for cat_id in self.categories]
+            if self.categories
+            else [],
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+        }
+
+    @classmethod
+    def from_row(cls, row: dict) -> Post:
+        row = row["_source"]
+        return cls(
+            id=UUID(row["id"]),
+            title=row["title"],
+            content=row["content"],
+            author_id=UUID(row["author_id"]),
+            created_at=datetime.fromisoformat(row["created_at"]),
+            updated_at=datetime.fromisoformat(row["updated_at"]),
+        )

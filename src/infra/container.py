@@ -10,9 +10,6 @@ from src.application.services.category_service import CategoryService
 from src.application.services.post_search_service import PostSearchService
 from src.application.services.post_service import PostService
 from src.application.services.user_service import UserService
-from src.domain.repositories.post_search_repository import (
-    BasePostSearchRepository,
-)
 from src.infra.config import Config
 from src.infra.providers.cache import RedisCacheProvider
 from src.infra.providers.database import PostgresProvider
@@ -75,10 +72,12 @@ def container_builder() -> Container:
         OpenSearchClientProvider, instance=opensearch_client_provider
     )
 
-    search_repo = PostSearchRepository(
-        client_provider=opensearch_client_provider
+    container.register(
+        "SearchRepo",
+        factory=lambda: PostSearchRepository(
+            client_provider=opensearch_client_provider
+        ),
     )
-    container.register(BasePostSearchRepository, instance=search_repo)
 
     container.register("UserRepo", factory=lambda: UserRepository())
     container.register("PostRepo", factory=lambda: PostRepository())
@@ -97,6 +96,7 @@ def container_builder() -> Container:
         UserService,
         factory=lambda: UserService(
             repository=container.resolve("UserRepo"),
+            search_repository=container.resolve("SearchRepo"),
         ),
     )
 
@@ -111,14 +111,14 @@ def container_builder() -> Container:
         PostService,
         factory=lambda: PostService(
             repository=container.resolve("PostRepo"),
-            search_repository=container.resolve(BasePostSearchRepository),
+            search_repository=container.resolve("SearchRepo"),
         ),
     )
 
     container.register(
         PostSearchService,
         factory=lambda: PostSearchService(
-            search_repository=container.resolve(BasePostSearchRepository),
+            search_repository=container.resolve("SearchRepo"),
         ),
     )
 

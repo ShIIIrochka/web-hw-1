@@ -102,3 +102,49 @@ class BaseUserRepository(ABC):
             list[User]: Список сохранённых постов
         """
         raise NotImplementedError
+
+    @abstractmethod
+    async def like_category(self, user_id: UUID, category_id: UUID) -> None:
+        """Лайкнуть категорию пользователем.
+
+        Args:
+            user_id (UUID): ID пользователя
+            category_id (UUID): ID категории
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def unlike_category(self, user_id: UUID, category_id: UUID) -> None:
+        """Убрать лайк с категории пользователем.
+
+        Args:
+            user_id (UUID): ID пользователя
+            category_id (UUID): ID категории
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_liked_categories(self, user_id: UUID) -> list[UUID]:
+        """Получение списка лайкнутых категорий пользователя.
+
+        Args:
+            user_id (UUID): ID пользователя
+
+        Returns:
+            list[UUID]: Список ID лайкнутых категорий
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_saved_posts_category_ids(self, user_id: UUID) -> list[UUID]:
+        """Получение ID категорий из сохранённых постов пользователя.
+
+        Оптимизированный метод для получения только ID категорий без загрузки постов.
+
+        Args:
+            user_id (UUID): ID пользователя
+
+        Returns:
+            list[UUID]: Список уникальных ID категорий
+        """
+        raise NotImplementedError

@@ -20,6 +20,13 @@ class User(models.Model):
     followers: fields.ManyToManyRelation["User"] = fields.ManyToManyField(
         "models.User", related_name="following", through="user_followers"
     )
+    liked_categories: fields.ManyToManyRelation["Category"] = (  # noqa
+        fields.ManyToManyField(  # noqa
+            "models.Category",
+            related_name="liked_by",
+            through="user_category_likes",
+        )
+    )
     comments: fields.ReverseRelation["Comment"]  # noqa
 
     async def to_entity(self) -> UserEntity:

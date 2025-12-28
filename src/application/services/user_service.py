@@ -8,7 +8,11 @@ from litestar.dto import DTOData
 from src.domain.entities.post import Post
 from src.domain.entities.user import User
 from src.domain.exceptions.user import EmailSyntaxError, UserNotFoundError
+from src.domain.repositories.post_search_repository import (
+    BasePostSearchRepository,
+)
 from src.domain.repositories.user_repository import BaseUserRepository
+from src.domain.value_objects.cursor import Page
 
 
 class UserService:
@@ -17,13 +21,16 @@ class UserService:
     def __init__(
         self,
         repository: BaseUserRepository,
+        search_repository: BasePostSearchRepository,
     ) -> None:
         """Конструктор.
 
         Args:
             repository (BaseRepository): Репозиторий для работы с БД
+            search_repository (BaseSearchRepository): Репозиторий для поиска постов
         """
         self._repo = repository
+        self._search_repo = search_repository
 
     async def get_user(self, data: DTOData[User]) -> User:
         """Получение пользователя по логину.
@@ -162,6 +169,72 @@ class UserService:
         """
         saved_posts = await self._repo.get_saved_posts(user_id)
         return saved_posts
+
+    async def like_category(self, user_id: UUID, category_id: UUID) -> None:
+        """Лайкнуть категорию пользователем.
+
+        Args:
+            user_id (UUID): ID пользователя
+            category_id (UUID): ID категории
+        """
+        await self._repo.like_category(user_id, category_id)
+
+    async def unlike_category(self, user_id: UUID, category_id: UUID) -> None:
+        """Убрать лайк с категории пользователем.
+
+        Args:
+            user_id (UUID): ID пользователя
+            category_id (UUID): ID категории
+        """
+        await self._repo.unlike_category(user_id, category_id)
+
+    async def get_liked_categories(self, user_id: UUID) -> list[UUID]:
+        """Получение списка лайкнутых категорий пользователя.
+
+        Args:
+            user_id (UUID): ID пользователя
+
+        Returns:
+            list[UUID]: Список ID лайкнутых категорий
+        """
+        return await self._repo.get_liked_categories(user_id)
+
+    async def get_feed(
+        self, user_id: UUID, cursor: UUID | None = None, limit: int = 10
+    ) -> Page:
+        """Получение персонализированной ленты для пользователя через OpenSearch.
+
+        Args:
+            user_id (UUID): ID пользователя
+            cursor (UUID | None): Курсор для пагинации
+            limit (int): Количество постов на странице
+
+        Returns:
+            Page с персонализированными постами
+        """
+        liked_categories = await self._repo.get_liked_categories(user_id)
+        saved_category_ids = await self._repo.get_saved_posts_category_ids(
+            user_id
+        )
+
+        posts = await self._search_repo.feed(
+            liked_categories=liked_categories,
+            saved_categories=saved_category_ids,
+            limit=limit + 1,
+            cursor=cursor,
+        )
+
+        has_more = len(posts) > limit
+        next_cursor = None
+        if has_more:
+            posts = posts[:limit]
+            next_cursor = posts[-1].id if posts else None
+
+        return Page(
+            items=posts,
+            next_cursor=next_cursor,
+            has_more=has_more,
+        )
 
     @staticmethod
     async def _validate_email(email: str) -> None:

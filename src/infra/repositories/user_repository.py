@@ -8,6 +8,7 @@ from tortoise.exceptions import DoesNotExist
 from src.domain.entities.post import Post
 from src.domain.entities.user import User
 from src.domain.repositories.user_repository import BaseUserRepository
+from src.infra.models.category import Category as CategoryModel
 from src.infra.models.post import Post as PostModel
 from src.infra.models.user import User as UserModel
 
@@ -19,15 +20,18 @@ class UserRepository(BaseUserRepository):
         self,
         model: type[UserModel] = UserModel,
         post_model: type[PostModel] = PostModel,
+        category_model: type[CategoryModel] = CategoryModel,
     ) -> None:
         """Конструктор.
 
         Args:
             model (type[UserModel]): ORM модель
             post_model (type[PostModel]): ORM модель поста
+            category_model (type[CategoryModel]): ORM модель категории
         """
         self._model = model
         self._post_model = post_model
+        self._category_model = category_model
 
     async def add(self, data: User) -> str:
         """Добавление нового пользователя."""
@@ -87,3 +91,55 @@ class UserRepository(BaseUserRepository):
         """
         posts = await self._post_model.filter(saved_by__id=user_id).all()
         return [await post.to_entity() for post in posts]
+
+    async def like_category(self, user_id: UUID, category_id: UUID) -> None:
+        """Лайкнуть категорию пользователем.
+
+        Args:
+            user_id (UUID): ID пользователя
+            category_id (UUID): ID категории
+        """
+
+        user = await self._model.get(id=user_id)
+        category = await self._category_model.get(id=category_id)
+        await user.liked_categories.add(category)
+
+    async def unlike_category(self, user_id: UUID, category_id: UUID) -> None:
+        """Убрать лайк с категории пользователем.
+
+        Args:
+            user_id (UUID): ID пользователя
+            category_id (UUID): ID категории
+        """
+
+        user = await self._model.get(id=user_id)
+        category = await self._category_model.get(id=category_id)
+        await user.liked_categories.remove(category)
+
+    async def get_liked_categories(self, user_id: UUID) -> list[UUID]:
+        """Получение списка лайкнутых категорий пользователя.
+
+        Args:
+            user_id (UUID): ID пользователя
+
+        Returns:
+            list[UUID]: Список ID лайкнутых категорий
+        """
+        categories = await self._category_model.filter(
+            liked_by__id=user_id
+        ).all()
+        return [category.id for category in categories]
+
+    async def get_saved_posts_category_ids(self, user_id: UUID) -> list[UUID]:
+        """Получение ID категорий из сохранённых постов пользователя.
+
+        Args:
+            user_id (UUID): ID пользователя
+
+        Returns:
+            list[UUID]: Список уникальных ID категорий
+        """
+        category_ids = await self._category_model.filter(
+            posts__saved_by__id=user_id
+        ).values_list("id", flat=True)
+        return category_ids

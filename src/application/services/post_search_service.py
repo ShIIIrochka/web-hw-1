@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from src.domain.entities.post import Post
 from src.domain.repositories.post_search_repository import (
     BasePostSearchRepository,
 )
-from src.domain.value_objects.search import PostSearchResult
 
 
 class PostSearchService:
@@ -24,7 +24,7 @@ class PostSearchService:
 
     async def search_posts(
         self, query: str, limit: int = 10, offset: int = 0
-    ) -> PostSearchResult:
+    ) -> list[Post]:
         """Поиск постов по запросу.
 
         Args:

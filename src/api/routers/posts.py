@@ -17,7 +17,6 @@ from punq import Container
 
 from src.api.dto.pagination import PaginatedResponseDTO
 from src.api.dto.posts import CreatePostDTO, PostDTO, UpdatePostDTO
-from src.api.dto.search import PostSearchHitDTO, PostSearchResultDTO
 from src.api.guards.auth import auth_guard
 from src.application.services.post_search_service import PostSearchService
 from src.application.services.post_service import PostService
@@ -175,28 +174,8 @@ class PostController(Controller):
             query="offset",
             ge=0,
         ),
-    ) -> PostSearchResultDTO:
+    ) -> list[Post]:
         """Полнотекстовый поиск постов через OpenSearch."""
         search_service: PostSearchService = container.resolve(PostSearchService)
         result = await search_service.search_posts(search_query, limit, offset)
-
-        hits_dto = [
-            PostSearchHitDTO(
-                post_id=hit.post_id,
-                title=hit.title,
-                content=hit.content,
-                author_id=hit.author_id,
-                created_at=hit.created_at,
-                updated_at=hit.updated_at,
-                score=hit.score,
-                highlight=hit.highlight,
-            )
-            for hit in result.hits
-        ]
-
-        return PostSearchResultDTO(
-            hits=hits_dto,
-            total=result.total,
-            limit=result.limit,
-            offset=result.offset,
-        )
+        return result

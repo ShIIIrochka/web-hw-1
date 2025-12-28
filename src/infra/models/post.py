@@ -25,7 +25,13 @@ class Post(models.Model):
 
     async def to_entity(self) -> PostEntity:
         """Перевод из ORM в Entity."""
-        await self.fetch_related("author")
+        await self.fetch_related("author", "categories")
+
+        category_ids = (
+            [category.id for category in self.categories]
+            if self.categories
+            else None
+        )
 
         return PostEntity(
             id=self.id,
@@ -34,4 +40,5 @@ class Post(models.Model):
             created_at=self.created_at,
             updated_at=self.updated_at,
             author_id=self.author.id,
+            categories=category_ids,
         )

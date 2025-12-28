@@ -71,6 +71,9 @@ class OpenSearchClientProvider:
                                 "analyzer": "english",
                             },
                             "author_id": {"type": "keyword"},
+                            "categories": {
+                                "type": "keyword"
+                            },  # Добавлено поле для категорий
                             "created_at": {"type": "date"},
                             "updated_at": {"type": "date"},
                         }

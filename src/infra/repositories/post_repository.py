@@ -70,11 +70,11 @@ class PostRepository(BasePostRepository):
         """Получение постов с cursor-offset пагинацией.
 
         Args:
-            cursor_id: id из курсора
-            limit: количество постов
+            cursor_id (UUID | None): id из курсора
+            limit (int): количество постов
 
         Returns:
-            Список постов
+            list[Post]: Список постов
         """
 
         query = self._model.all()
