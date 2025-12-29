@@ -1,0 +1,44 @@
+services:
+  backend:
+    container_name: backend
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DB_URI=asyncpg://admin:password@postgres:5432/db
+      - SECRET_KEY=secret
+      - OPENSEARCH_URI=https://admin:pbWlZ&ys9cXY@opensearch:9200/posts
+      - REDIS_URI=redis://0.0.0.0:6379/0
+      - CACHE_TTL_SECONDS=60
+      - CACHE_POPULARITY_THRESHOLD=10
+    depends_on:
+      - postgres
+      - opensearch
+
+  postgres:
+    container_name: postgres
+    image: postgres
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=db
+    ports:
+      - "5432:5432"
+
+  opensearch:
+    container_name: opensearch
+    image: opensearchproject/opensearch:3.3.2
+    environment:
+      - OPENSEARCH_USERNAME=admin
+      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=pbWlZ&ys9cXY"
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+
+  redis:
+      container_name: redis
+      image: redis
+      ports:
+          - "6379:6379"

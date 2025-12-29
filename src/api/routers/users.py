@@ -1,0 +1,303 @@
+# -*- coding: utf-8 -*-
+
+from uuid import UUID
+
+from litestar import Controller, Request, Response, delete, get, post, put
+from litestar.datastructures import Cookie, State
+from litestar.dto import DTOData
+from litestar.exceptions import NotFoundException, ValidationException
+from litestar.params import Parameter
+from litestar.status_codes import HTTP_200_OK, HTTP_204_NO_CONTENT
+from punq import Container
+
+from src.api.dto.pagination import PaginatedResponseDTO
+from src.api.dto.posts import PostDTO
+from src.api.dto.users import UpdateUserDTO, UserDTO
+from src.api.guards.auth import auth_guard
+from src.application.services.post_service import PostService
+from src.application.services.user_service import UserService
+from src.domain.entities.user import User
+from src.domain.exceptions.user import EmailSyntaxError
+from src.domain.value_objects.cursor import Page
+from src.infra.config import Config
+
+
+class UserController(Controller):
+    """Контроллер для работы с пользователями."""
+
+    path = "/users"
+    tags = ["Users"]
+    guards = [auth_guard]
+    security: list[dict[str, list]] = [{"BearerAuth": []}]
+
+    @get(
+        path="/me",
+        return_dto=UserDTO,
+        status_code=HTTP_200_OK,
+    )
+    async def get_me(self, request: Request[User, str, State]) -> User:
+        """Получение информации о текущем пользователе."""
+        return request.user
+
+    @get(
+        path="/{user_id:uuid}",
+        return_dto=UserDTO,
+        status_code=HTTP_200_OK,
+    )
+    async def get_user_by_id(
+        self,
+        user_id: UUID,
+        container: Container,
+    ) -> User:
+        """Получение информации о пользователе по ID."""
+        user_service = container.resolve(UserService)
+        user = await user_service.get_user_by_id(str(user_id))
+        return user
+
+    @get(path="/posts/saved", return_dto=PostDTO, status_code=HTTP_200_OK)
+    async def get_saved_posts(
+        self,
+        request: Request[User, str, State],
+        container: Container,
+    ) -> list[PostDTO]:
+        """Получение сохранённых постов текущего пользователя."""
+        user_service = container.resolve(UserService)
+        saved_posts = await user_service.get_saved_posts(request.user.id)
+        return saved_posts
+
+    @put(
+        path="/update",
+        dto=UpdateUserDTO,
+        return_dto=UserDTO,
+        status_code=HTTP_200_OK,
+    )
+    async def update_user(
+        self,
+        data: DTOData[User],
+        request: Request[User, str, State],
+        container: Container,
+    ) -> User:
+        """Обновление информации о пользователе."""
+        user_service = container.resolve(UserService)
+        try:
+            updated_user = await user_service.update_user(request.user, data)
+        except EmailSyntaxError:
+            raise ValidationException(detail="Invalid email format.")
+        except ValueError:
+            raise ValidationException(
+                detail="User with this amil already exists"
+            )
+        return updated_user
+
+    @delete(
+        path="/delete",
+        status_code=HTTP_204_NO_CONTENT,
+    )
+    async def delete_user(
+        self, request: Request[User, str, State], container: Container
+    ) -> Response[None]:
+        """Удаление информации о пользователе"""
+        user_service = container.resolve(UserService)
+        config: Config = container.resolve(Config)
+        await user_service.delete_user(request.user.id)
+
+        samesite = "lax" if config.debug else "none"
+        secure = not config.debug
+
+        return Response(
+            None,
+            cookies=[
+                Cookie(
+                    key="access_token",
+                    value="",
+                    httponly=True,
+                    samesite=samesite,
+                    secure=secure,
+                    max_age=0,
+                ),
+                Cookie(
+                    key="refresh_token",
+                    value="",
+                    httponly=True,
+                    samesite=samesite,
+                    secure=secure,
+                    max_age=0,
+                ),
+            ],
+        )
+
+    @post(
+        path="/posts/save/{post_id:uuid}",
+        status_code=HTTP_204_NO_CONTENT,
+        security=[{"BearerAuth": []}],
+    )
+    async def save_post(
+        self,
+        post_id: UUID,
+        request: Request[User, str, State],
+        container: Container,
+    ) -> None:
+        """Сохранение поста пользователем."""
+        user_service = container.resolve(UserService)
+        await user_service.save_post(request.user.id, post_id)
+
+    @delete(
+        path="/unsave-post/{post_id:uuid}",
+        status_code=HTTP_204_NO_CONTENT,
+        security=[{"BearerAuth": []}],
+    )
+    async def unsave_post(
+        self,
+        post_id: UUID,
+        request: Request[User, str, State],
+        container: Container,
+    ) -> None:
+        """Удаление сохраненного поста пользователем."""
+        user_service = container.resolve(UserService)
+        await user_service.unsave_post(request.user.id, post_id)
+
+    @post(
+        path="/categories/like/{category_id:uuid}",
+        status_code=HTTP_204_NO_CONTENT,
+        security=[{"BearerAuth": []}],
+    )
+    async def like_category(
+        self,
+        category_id: UUID,
+        request: Request[User, str, State],
+        container: Container,
+    ) -> None:
+        """Лайкнуть категорию пользователем."""
+        user_service = container.resolve(UserService)
+        await user_service.like_category(request.user.id, category_id)
+
+    @delete(
+        path="/categories/unlike/{category_id:uuid}",
+        status_code=HTTP_204_NO_CONTENT,
+        security=[{"BearerAuth": []}],
+    )
+    async def unlike_category(
+        self,
+        category_id: UUID,
+        request: Request[User, str, State],
+        container: Container,
+    ) -> None:
+        """Убрать лайк с категории пользователем."""
+        user_service = container.resolve(UserService)
+        await user_service.unlike_category(request.user.id, category_id)
+
+    @get(
+        path="/categories/liked",
+        status_code=HTTP_200_OK,
+    )
+    async def get_liked_categories(
+        self,
+        request: Request[User, str, State],
+        container: Container,
+    ) -> list[UUID]:
+        """Получение списка лайкнутых категорий пользователя."""
+        user_service = container.resolve(UserService)
+        liked_categories = await user_service.get_liked_categories(
+            request.user.id
+        )
+        return liked_categories
+
+    @post(
+        path="/follow/{user_id:uuid}",
+        status_code=HTTP_204_NO_CONTENT,
+        security=[{"BearerAuth": []}],
+    )
+    async def follow_user(
+        self,
+        user_id: UUID,
+        request: Request[User, str, State],
+        container: Container,
+    ) -> None:
+        """Подписаться на пользователя."""
+        user_service = container.resolve(UserService)
+        try:
+            await user_service.follow_user(request.user.id, user_id)
+        except ValueError as e:
+            raise ValidationException(detail=str(e))
+        except Exception:
+            raise NotFoundException(detail="User not found")
+
+    @delete(
+        path="/unfollow/{user_id:uuid}",
+        status_code=HTTP_204_NO_CONTENT,
+        security=[{"BearerAuth": []}],
+    )
+    async def unfollow_user(
+        self,
+        user_id: UUID,
+        request: Request[User, str, State],
+        container: Container,
+    ) -> None:
+        """Отписаться от пользователя."""
+        user_service = container.resolve(UserService)
+        try:
+            await user_service.unfollow_user(request.user.id, user_id)
+        except Exception:
+            raise NotFoundException(detail="User not found")
+
+    @get(
+        "/personalized-feed",
+        status_code=HTTP_200_OK,
+        return_dto=PaginatedResponseDTO,
+    )
+    async def get_personalized_feed(
+        self,
+        request: Request[User, str, State],
+        container: Container,
+        cursor: UUID | None = Parameter(
+            default=None,
+            query="cursor",
+            description="Cursor for pagination",
+        ),
+        limit: int = Parameter(
+            default=10,
+            query="limit",
+            ge=1,
+            le=100,
+            description="Number of posts per page",
+        ),
+    ) -> Page:
+        """Получение персонализированной ленты постов для пользователя."""
+        post_service: UserService = container.resolve(UserService)
+        try:
+            page = await post_service.get_feed(request.user.id, cursor, limit)
+            return page
+        except ValueError as e:
+            raise NotFoundException(detail=str(e))
+
+    @get(
+        "/feed",
+        status_code=HTTP_200_OK,
+        return_dto=PaginatedResponseDTO,
+    )
+    async def get_feed(
+        self,
+        container: Container,
+        request: Request[User, str, State],
+        cursor: UUID | None = Parameter(
+            default=None,
+            query="cursor",
+            description="Cursor for pagination",
+        ),
+        limit: int = Parameter(
+            default=10,
+            query="limit",
+            ge=1,
+            le=100,
+            description="Number of posts per page",
+        ),
+    ) -> Page:
+        """Получение ленты постов от подписанных авторов с cursor-offset пагинацией."""
+        post_service: PostService = container.resolve(PostService)
+        try:
+            page = await post_service.get_feed_posts(
+                request.user, cursor, limit
+            )
+            return page
+        except ValueError as e:
+            raise NotFoundException(detail=str(e))
